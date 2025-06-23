@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quant-to-Coinbase Mesh Connector | Developer Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-okaidia.min.css">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --light-bg: #f8f9fa;
+            --dark-bg: #343a40;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            padding-top: 56px;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color) !important;
+        }
+        
+        .hero {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .hero h1 {
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .hero p {
+            font-size: 1.25rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            height: 100%;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            border-radius: 8px 8px 0 0 !important;
+        }
+        
+        .api-method {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+        
+        .api-method.post {
+            background-color: #10b981;
+            color: white;
+        }
+        
+        .api-method.get {
+            background-color: #3b82f6;
+            color: white;
+        }
+        
+        pre {
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        
+        .nav-pills .nav-link.active {
+            background-color: var(--primary-color);
+        }
+        
+        .nav-pills .nav-link {
+            color: var(--secondary-color);
+        }
+        
+        footer {
+            background-color: var(--dark-bg);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+        
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .section-title {
+            position: relative;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 50px;
+            height: 3px;
+            background-color: var(--primary-color);
+        }
+        
+        .api-explorer {
+            background-color: var(--light-bg);
+            padding: 2rem 0;
+            border-radius: 8px;
+        }
+        
+        /* Fix for layout issues */
+        .container {
+            max-width: 1200px;
+        }
+        
+        section {
+            clear: both;
+            overflow: hidden;
+        }
+        
+        .row {
+            margin-left: 0;
+            margin-right: 0;
+        }
+        
+        .col-md-4, .col-lg-6 {
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+        
+        /* Ensure proper spacing between sections */
+        #documentation {
+            margin-top: 2rem;
+            padding-top: 3rem;
+        }
+        
+        /* Fix card heights and spacing */
+        .card.h-100 {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card-body .btn {
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#">Quant-Mesh Connector</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#features">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#api-reference">API Reference</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#code-samples">Code Samples</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#documentation">Documentation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-primary ms-2" href="#get-started">Get Started</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero text-center">
+        <div class="container">
+            <h1>Quant-to-Coinbase Mesh Connector</h1>
+            <p class="lead">A unified API for seamless blockchain interactions across multiple networks</p>
+            <div class="mt-4">
+                <a href="#get-started" class="btn btn-light btn-lg me-2">Get Started</a>
+                <a href="#api-reference" class="btn btn-outline-light btn-lg">API Reference</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-5">
+        <div class="container">
+            <h2 class="text-center mb-5">Key Features</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="feature-icon">
+                                <i class="bi bi-arrow-repeat"></i>🔄
+                            </div>
+                            <h3>Cross-Chain Compatibility</h3>
+                            <p>Execute transactions and query data across multiple blockchain networks through a single, unified API.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="feature-icon">
+                                <i class="bi bi-shield-check"></i>🔐
+                            </div>
+                            <h3>Secure Authentication</h3>
+                            <p>Enterprise-grade security with API key authentication and comprehensive access controls.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="feature-icon">
+                                <i class="bi bi-code-square"></i>📊
+                            </div>
+                            <h3>Standardized Data Model</h3>
+                            <p>Consistent response formats across all blockchain networks, simplifying integration and development.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="feature-icon">
+                                <i class="bi bi-lightning"></i>⚡
+                            </div>
+                            <h3>High Performance</h3>
+                            <p>Optimized for speed and reliability with sub-second response times for most operations.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="feature-icon">
+                                <i class="bi bi-file-code"></i>📝
+                            </div>
+                            <h3>Smart Contract Support</h3>
+                            <p>Deploy, interact with, and monitor smart contracts across supported blockchain networks.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="feature-icon">
+                                <i class="bi bi-bell"></i>🔔
+                            </div>
+                            <h3>Event Notifications</h3>
+                            <p>Subscribe to blockchain events and receive real-time notifications through webhooks.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- API Reference Section -->
+    <section id="api-reference" class="py-5 bg-light">
+        <div class="container">
+            <h2 class="section-title">API Reference</h2>
+            <div class="row">
+                <div class="col-lg-3">
+                    <div class="nav flex-column nav-pills me-3" id="v-pills-tab" role="tablist">
+                        <button class="nav-link active" id="v-pills-construction-tab" data-bs-toggle="pill" data-bs-target="#v-pills-construction" type="button">Construction API</button>
+                        <button class="nav-link" id="v-pills-account-tab" data-bs-toggle="pill" data-bs-target="#v-pills-account" type="button">Account API</button>
+                        <button class="nav-link" id="v-pills-block-tab" data-bs-toggle="pill" data-bs-target="#v-pills-block" type="button">Block API</button>
+                        <button class="nav-link" id="v-pills-transaction-tab" data-bs-toggle="pill" data-bs-target="#v-pills-transaction" type="button">Transaction API</button>
+                    </div>
+                </div>
+                <div class="col-lg-9">
+                    <div class="tab-content" id="v-pills-tabContent">
+                        <!-- Construction API -->
+                        <div class="tab-pane fade show active" id="v-pills-construction">
+                            <div class="card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span><span class="api-method post">POST</span> /v1/construction/preprocess</span>
+                                </div>
+                                <div class="card-body">
+                                    <h5>Preprocess Transaction</h5>
+                                    <p>Creates a request to fetch metadata needed for transaction construction.</p>
+                                    <h6>Request Example:</h6>
+                                    <pre><code class="language-json">{
+  "network_identifier": {
+    "blockchain": "ethereum",
+    "network": "mainnet"
+  },
+  "operations": [
+    {
+      "operation_identifier": {
+        "index": 0
+      },
+      "type": "TRANSFER",
+      "account": {
+        "address": "0x1234567890123456789012345678901234567890"
+      },
+      "amount": {
+        "value": "1000000000000000000",
+        "currency": {
+          "symbol": "ETH",
+          "decimals": 18
+        }
+      }
+    }
+  ]
+}</code></pre>
+                                    <h6>Response Example:</h6>
+                                    <pre><code class="language-json">{
+  "options": {
+    "gas_price": "20000000000",
+    "gas_limit": "21000"
+  }
+}</code></pre>
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span><span class="api-method post">POST</span> /v1/construction/payloads</span>
+                                </div>
+                                <div class="card-body">
+                                    <h5>Create Payloads</h5>
+                                    <p>Generates an unsigned transaction and payloads to sign.</p>
+                                    <h6>Request Example:</h6>
+                                    <pre><code class="language-json">{
+  "network_identifier": {
+    "blockchain": "ethereum",
+    "network": "mainnet"
+  },
+  "operations": [...],
+  "metadata": {
+    "gas_price": "20000000000",
+    "gas_limit": "21000"
+  }
+}</code></pre>
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span><span class="api-method post">POST</span> /v1/construction/combine</span>
+                                </div>
+                                <div class="card-body">
+                                    <h5>Combine Signatures</h5>
+                                    <p>Combines an unsigned transaction with signatures.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span><span class="api-method post">POST</span> /v1/construction/submit</span>
+                                </div>
+                                <div class="card-body">
+                                    <h5>Submit Transaction</h5>
+                                    <p>Submits a signed transaction to the blockchain.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Account API -->
+                        <div class="tab-pane fade" id="v-pills-account">
+                            <div class="card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span><span class="api-method post">POST</span> /v1/account/balance</span>
+                                </div>
+                                <div class="card-body">
+                                    <h5>Get Account Balance</h5>
+                                    <p>Retrieves the balance of an account for a specific blockchain and network.</p>
+                                    <h6>Request Example:</h6>
+                                    <pre><code class="language-json">{
+  "network_identifier": {
+    "blockchain": "ethereum",
+    "network": "mainnet"
+  },
+  "account_identifier": {
+    "address": "0x1234567890123456789012345678901234567890"
+  }
+}</code></pre>
+                                    <h6>Response Example:</h6>
+                                    <pre><code class="language-json">{
+  "block_identifier": {
+    "index": 12345678,
+    "hash": "0xabcdef..."
+  },
+  "balances": [
+    {
+      "value": "1000000000000000000",
+      "currency": {
+        "symbol": "ETH",
+        "decimals": 18
+      }
+    }
+  ]
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Block API -->
+                        <div class="tab-pane fade" id="v-pills-block">
+                            <div class="card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span><span class="api-method post">POST</span> /v1/block</span>
+                                </div>
+                                <div class="card-body">
+                                    <h5>Get Block</h5>
+                                    <p>Retrieves a block by index or hash.</p>
+                                    <h6>Request Example:</h6>
+                                    <pre><code class="language-json">{
+  "network_identifier": {
+    "blockchain": "ethereum",
+    "network": "mainnet"
+  },
+  "block_identifier": {
+    "index": 12345678
+  }
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Transaction API -->
+                        <div class="tab-pane fade" id="v-pills-transaction">
+                            <div class="card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span><span class="api-method post">POST</span> /v1/transaction</span>
+                                </div>
+                                <div class="card-body">
+                                    <h5>Get Transaction</h5>
+                                    <p>Retrieves a transaction by its identifier.</p>
+                                    <h6>Request Example:</h6>
+                                    <pre><code class="language-json">{
+  "network_identifier": {
+    "blockchain": "ethereum",
+    "network": "mainnet"
+  },
+  "transaction_identifier": {
+    "hash": "0x1234567890abcdef..."
+  }
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Code Samples Section -->
+    <section id="code-samples" class="py-5">
+        <div class="container">
+            <h2 class="section-title">Code Samples</h2>
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">JavaScript</div>
+                        <div class="card-body">
+                            <h5>Query Account Balance</h5>
+                            <pre><code class="language-javascript">const axios = require('axios');
+
+async function getAccountBalance() {
+  try {
+    const response = await axios.post(
+      'http://localhost:8080/v1/account/balance',
+      {
+        network_identifier: {
+          blockchain: 'ethereum',
+          network: 'mainnet'
+        },
+        account_identifier: {
+          address: '0x1234567890123456789012345678901234567890'
+        }
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': 'your-api-key-here'
+        }
+      }
+    );
+    
+    console.log('Account Balance:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching balance:', error.response?.data || error.message);
+  }
+}
+
+getAccountBalance();</code></pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">Go</div>
+                        <div class="card-body">
+                            <h5>Submit Transaction</h5>
+                            <pre><code class="language-go">package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+)
+
+func main() {
+	// Prepare request body
+	reqBody, _ := json.Marshal(map[string]interface{}{
+		"network_identifier": map[string]string{
+			"blockchain": "ethereum",
+			"network":    "mainnet",
+		},
+		"signed_transaction": "0x...", // Your signed transaction
+	})
+
+	// Create request
+	req, _ := http.NewRequest(
+		"POST",
+		"http://localhost:8080/v1/construction/submit",
+		bytes.NewBuffer(reqBody),
+	)
+
+	// Set headers
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "your-api-key-here")
+
+	// Send request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error sending request:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Parse response
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+
+	fmt.Println("Transaction submitted:", result)
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">Python</div>
+                        <div class="card-body">
+                            <h5>Get Block Information</h5>
+                            <pre><code class="language-python">import requests
+import json
+
+def get_block_info(block_index):
+    url = "http://localhost:8080/v1/block"
+    
+    payload = {
+        "network_identifier": {
+            "blockchain": "ethereum",
+            "network": "mainnet"
+        },
+        "block_identifier": {
+            "index": block_index
+        }
+    }
+    
+    headers = {
+        "Content-Type": "application/json",
+        "X-API-Key": "your-api-key-here"
+    }
+    
+    response = requests.post(url, json=payload, headers=headers)
+    
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        return None
+
+# Get information about block #12345678
+block_data = get_block_info(12345678)
+print(json.dumps(block_data, indent=2))</code></pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">Java</div>
+                        <div class="card-body">
+                            <h5>Preprocess Transaction</h5>
+                            <pre><code class="language-java">import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.URI;
+
+public class MeshConnectorExample {
+    public static void main(String[] args) {
+        try {
+            String requestBody = &quot;{&quot;
+                + &quot;\&quot;network_identifier\&quot;: {&quot;
+                + &quot;    \&quot;blockchain\&quot;: \&quot;ethereum\&quot;,&quot;
+                + &quot;    \&quot;network\&quot;: \&quot;mainnet\&quot;&quot;
+                + &quot;},&quot;
+                + &quot;\&quot;operations\&quot;: [&quot;
+                + &quot;    {&quot;
+                + &quot;        \&quot;operation_identifier\&quot;: {&quot;
+                + &quot;            \&quot;index\&quot;: 0&quot;
+                + &quot;        },&quot;
+                + &quot;        \&quot;type\&quot;: \&quot;TRANSFER\&quot;,&quot;
+                + &quot;        \&quot;account\&quot;: {&quot;
+                + &quot;            \&quot;address\&quot;: \&quot;0x1234567890123456789012345678901234567890\&quot;&quot;
+                + &quot;        },&quot;
+                + &quot;        \&quot;amount\&quot;: {&quot;
+                + &quot;            \&quot;value\&quot;: \&quot;1000000000000000000\&quot;,&quot;
+                + &quot;            \&quot;currency\&quot;: {&quot;
+                + &quot;                \&quot;symbol\&quot;: \&quot;ETH\&quot;,&quot;
+                + &quot;                \&quot;decimals\&quot;: 18&quot;
+                + &quot;            }&quot;
+                + &quot;        }&quot;
+                + &quot;    }&quot;
+                + &quot;]&quot;
+                + &quot;}&quot;;
+
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(&quot;http://localhost:8080/v1/construction/preprocess&quot;))
+                .header(&quot;Content-Type&quot;, &quot;application/json&quot;)
+                .header(&quot;X-API-Key&quot;, &quot;your-api-key-here&quot;)
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                .build();
+
+            HttpResponse&lt;String&gt; response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            System.out.println(&quot;Status code: &quot; + response.statusCode());
+            System.out.println(&quot;Response: &quot; + response.body());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Get Started Section -->
+    <section id="get-started" class="py-5 bg-light">
+        <div class="container">
+            <h2 class="section-title">Get Started</h2>
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h3>1. Install the Connector</h3>
+                            <p>Clone the repository and build the connector:</p>
+                            <pre><code class="language-bash">git clone https://github.com/yourusername/quant-mesh-connector.git
+cd quant-mesh-connector
+go mod download
+go build -o bin/connector cmd/main.go</code></pre>
+                        </div>
+                    </div>
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h3>2. Configure Environment</h3>
+                            <p>Create a <code>.env</code> file with your configuration:</p>
+                            <pre><code class="language-bash">cp .env.example .env
+# Edit .env with your settings</code></pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h3>3. Start the Server</h3>
+                            <p>Run the connector:</p>
+                            <pre><code class="language-bash">./bin/connector</code></pre>
+                            <p>Or use Docker:</p>
+                            <pre><code class="language-bash">docker-compose up -d</code></pre>
+                        </div>
+                    </div>
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h3>4. Make Your First API Call</h3>
+                            <p>Test the API with a simple health check:</p>
+                            <pre><code class="language-bash">curl http://localhost:8080/health</code></pre>
+                            <p>Expected response:</p>
+                            <pre><code class="language-json">{
+  "status": "healthy",
+  "timestamp": 1634567890,
+  "version": "1.0.0"
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Documentation Section -->
+    <section id="documentation" class="py-5">
+        <div class="container">
+            <h2 class="section-title">Documentation</h2>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h3>API Reference</h3>
+                            <p>Complete documentation of all API endpoints, request/response formats, and error codes.</p>
+                            <a href="#api-reference" class="btn btn-primary">View API Reference</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h3>Tutorials</h3>
+                            <p>Step-by-step guides for common integration scenarios and use cases.</p>
+                            <a href="#" class="btn btn-primary">View Tutorials</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h3>Best Practices</h3>
+                            <p>Recommendations for secure and efficient integration with the connector.</p>
+                            <a href="#" class="btn btn-primary">View Best Practices</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white">
+        <div class="container py-4">
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Quant-to-Coinbase Mesh Connector</h4>
+                    <p>A unified API for seamless blockchain interactions across multiple networks.</p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Resources</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#api-reference" class="text-white">API Reference</a></li>
+                        <li><a href="#code-samples" class="text-white">Code Samples</a></li>
+                        <li><a href="#documentation" class="text-white">Documentation</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Support</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-white">GitHub</a></li>
+                        <li><a href="#" class="text-white">Contact Us</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4 bg-light">
+            <div class="text-center">
+                <p>&copy; 2023 Quant-to-Coinbase Mesh Connector. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-java.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+</body>
+</html>
