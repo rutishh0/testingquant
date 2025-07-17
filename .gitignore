@@ -81,5 +81,5 @@ config.local.yaml
 config.local.yml
 config.local.json
 
-internal/overledger
+/internal/overledger
 docs/
