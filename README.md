@@ -47,7 +47,7 @@ cp .env.example .env
 4. Update `.env` with your configuration:
 ```env
 SERVER_ADDRESS=:8080
-MESH_API_URL=http://localhost:8080
+MESH_API_URL=http://localhost:8081
 API_KEY=your-api-key-here
 ENVIRONMENT=development
 LOG_LEVEL=info
@@ -206,9 +206,12 @@ X-API-Key: your-api-key
 │   ├── connector/
 │   │   ├── models.go        # Overledger data models
 │   │   └── service.go       # Translation service
-│   └── mesh/
-│       ├── client.go        # Mesh API client
-│       └── models.go        # Mesh data models
+│   ├── mesh/
+│   │   ├── client.go        # Mesh API client
+│   │   └── models.go        # Mesh data models
+│   └── overledger/
+│       ├── client.go        # Overledger API client
+│       └── models.go        # Overledger data models
 ├── .env.example             # Environment configuration template
 ├── go.mod                   # Go module definition
 └── README.md               # This file
@@ -231,10 +234,14 @@ go build -o bin/connector cmd/main.go
 | Environment Variable | Description | Default |
 |----------------------|-------------|----------|
 | `SERVER_ADDRESS` | Server bind address | `:8080` |
-| `MESH_API_URL` | Coinbase Mesh API URL | `http://localhost:8080` |
+| `MESH_API_URL` | Coinbase Mesh API URL | `http://localhost:8081` |
 | `API_KEY` | API authentication key | - |
 | `ENVIRONMENT` | Runtime environment | `development` |
 | `LOG_LEVEL` | Logging level | `info` |
+| `OVERLEDGER_CLIENT_ID` | Quant Overledger OAuth2 client ID | - |
+| `OVERLEDGER_CLIENT_SECRET` | Quant Overledger OAuth2 client secret | - |
+| `OVERLEDGER_AUTH_URL` | Quant Overledger OAuth2 token URL | `https://auth.overledger.dev/oauth2/token` |
+| `OVERLEDGER_BASE_URL` | Quant Overledger API base URL | `https://api.overledger.dev` |
 
 ## Error Handling
 
@@ -270,4 +277,4 @@ Common error codes:
 
 ## License
 
-This project is licensed under the MIT License."# mesh"
+This project is licensed under the MIT License.
