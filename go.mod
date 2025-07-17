@@ -2,15 +2,15 @@ module github.com/rutishh0/testingquant
 
 go 1.21
 
-// Replace placeholder module paths used in imports with the current module
-replace github.com/quant-mesh-connector => ./
-replace github.com/your-username/quant-mesh-connector => ./
+
 
 require (
+
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/joho/godotenv v1.4.0
 	github.com/stretchr/testify v1.8.4
+	github.com/golang-jwt/jwt/v5 v5.0.1
 )
 
 require (

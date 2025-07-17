@@ -4,8 +4,8 @@ import (
     "errors"
     "time"
 
-    core "github.com/your-username/quant-mesh-connector/internal/core"
-    "github.com/your-username/quant-mesh-connector/internal/mesh"
+    core "github.com/rutishh0/testingquant/internal/core"
+    "github.com/rutishh0/testingquant/internal/mesh"
 )
 
 // Adapter implements the core.Connector interface for Coinbase Mesh API.

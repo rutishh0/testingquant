@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"your-project/internal/utils"
+	"github.com/rutishh0/testingquant/internal/utils"
 )
 
 type CoinbaseClient struct {
