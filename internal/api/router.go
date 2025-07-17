@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/quant-mesh-connector/internal/connector"
+	"github.com/rutishh0/testingquant/internal/connector"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -33,7 +33,7 @@ func SetupRouter(connectorService connector.Service) *gin.Engine {
 	// Health and status endpoints
 	router.GET("/health", handlers.Health)
 	router.GET("/status", handlers.Status)
-	
+
 	// Serve developer portal
 	router.Static("/web", "./web")
 	router.GET("/", func(c *gin.Context) {
@@ -75,13 +75,13 @@ func SetupRouter(connectorService connector.Service) *gin.Engine {
 		{
 			// Network endpoints
 			overledger.GET("/networks", handlers.GetOverledgerNetworks)
-			
+
 			// Balance endpoints
 			overledger.GET("/balance/:networkId/:address", handlers.GetOverledgerBalance)
-			
+
 			// Transaction endpoints
 			overledger.POST("/transaction", handlers.CreateOverledgerTransaction)
-			
+
 			// Connection test endpoint
 			overledger.GET("/test", handlers.TestOverledgerConnection)
 		}
@@ -95,8 +95,8 @@ func apiKeyMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Skip API key validation for health, status, root, and web endpoints
 		path := c.Request.URL.Path
-		if path == "/health" || path == "/status" || path == "/" || 
-		   strings.HasPrefix(path, "/web/") {
+		if path == "/health" || path == "/status" || path == "/" ||
+			strings.HasPrefix(path, "/web/") {
 			c.Next()
 			return
 		}

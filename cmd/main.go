@@ -4,15 +4,15 @@ import (
     "log"
     "os"
 
-    "github.com/your-username/quant-mesh-connector/internal/api"
-    "github.com/your-username/quant-mesh-connector/internal/config"
-    "github.com/your-username/quant-mesh-connector/internal/connector"
-    "github.com/your-username/quant-mesh-connector/internal/mesh"
-    "github.com/your-username/quant-mesh-connector/internal/overledger"
+    "github.com/rutishh0/testingquant/internal/api"
+    "github.com/rutishh0/testingquant/internal/config"
+    "github.com/rutishh0/testingquant/internal/connector"
+    "github.com/rutishh0/testingquant/internal/mesh"
+    "github.com/rutishh0/testingquant/internal/overledger"
 
-    core "github.com/your-username/quant-mesh-connector/internal/core"
-    _ "github.com/your-username/quant-mesh-connector/internal/adapters/mesh"
-    _ "github.com/your-username/quant-mesh-connector/internal/adapters/overledger"
+    core "github.com/rutishh0/testingquant/internal/core"
+    _ "github.com/rutishh0/testingquant/internal/adapters/mesh"
+    _ "github.com/rutishh0/testingquant/internal/adapters/overledger"
 
     "github.com/gin-gonic/gin"
     "github.com/joho/godotenv"
