@@ -3,8 +3,8 @@ package connector
 import (
 	"errors"
 	"fmt"
-	"github.com/quant-mesh-connector/internal/mesh"
-	"github.com/quant-mesh-connector/internal/overledger"
+	"github.com/your-username/quant-mesh-connector/internal/mesh"
+	"github.com/your-username/quant-mesh-connector/internal/overledger"
 )
 
 // Service defines the connector service interface

@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/quant-mesh-connector/internal/connector"
-	"github.com/quant-mesh-connector/internal/overledger"
+	"github.com/your-username/quant-mesh-connector/internal/connector"
+	"github.com/your-username/quant-mesh-connector/internal/overledger"
 
 	"github.com/gin-gonic/gin"
 )

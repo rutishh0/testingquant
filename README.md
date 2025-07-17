@@ -30,7 +30,7 @@ The connector consists of:
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/rutishh0/quant-mesh-connector.git
 cd quant-mesh-connector
 ```
 
@@ -270,4 +270,4 @@ Common error codes:
 
 ## License
 
-This project is licensed under the MIT License."# mesh" 
+This project is licensed under the MIT License."# mesh"

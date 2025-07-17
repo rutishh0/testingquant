@@ -1,4 +1,4 @@
-module github.com/quant-mesh-connector
+module github.com/your-username/quant-mesh-connector
 
 go 1.21
 

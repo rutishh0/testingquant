@@ -4,11 +4,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/quant-mesh-connector/internal/api"
-	"github.com/quant-mesh-connector/internal/config"
-	"github.com/quant-mesh-connector/internal/connector"
-	"github.com/quant-mesh-connector/internal/mesh"
-	"github.com/quant-mesh-connector/internal/overledger"
+	"github.com/your-username/quant-mesh-connector/internal/api"
+	"github.com/your-username/quant-mesh-connector/internal/config"
+	"github.com/your-username/quant-mesh-connector/internal/connector"
+	"github.com/your-username/quant-mesh-connector/internal/mesh"
+	"github.com/your-username/quant-mesh-connector/internal/overledger"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"

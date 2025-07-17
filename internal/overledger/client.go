@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/quant-mesh-connector/internal/config"
+	"github.com/your-username/quant-mesh-connector/internal/config"
 )
 
 // Client represents an Overledger API client with OAuth2 authentication
