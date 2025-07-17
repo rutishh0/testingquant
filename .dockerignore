@@ -1,0 +1,30 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Binaries
+main
+
+# Documentation
+README.md
+PRD.md
+TRD.md
+docs/
+
+# Test files
+*_test.go
+test_api.ps1
+
+# Screenshots and images
+*.png
+*.jpg
+*.jpeg
+
+# Local development files
+.env
+.env.local
