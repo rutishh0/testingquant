@@ -5,9 +5,9 @@ import (
     "strings"
     "time"
 
-    core "github.com/your-username/quant-mesh-connector/internal/core"
-    "github.com/your-username/quant-mesh-connector/internal/overledger"
-    "github.com/your-username/quant-mesh-connector/internal/config"
+    core "github.com/rutishh0/testingquant/internal/core"
+    "github.com/rutishh0/testingquant/internal/overledger"
+    "github.com/rutishh0/testingquant/internal/config"
 )
 
 // Adapter implements the core.Connector interface for Quant Overledger API.

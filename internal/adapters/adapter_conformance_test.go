@@ -4,7 +4,7 @@ import (
     "testing"
     "path/filepath"
 
-    core "github.com/your-username/quant-mesh-connector/internal/core"
+    core "github.com/rutishh0/testingquant/internal/core"
 )
 
 // TestConnectorIDsUnique ensures each adapter registers with a non-empty, unique ID.
