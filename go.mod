@@ -10,7 +10,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/joho/godotenv v1.4.0
 	github.com/stretchr/testify v1.8.4
-	github.com/golang-jwt/jwt/v5 v5.0.1
+	github.com/golang-jwt/jwt/v5 v5.2.3
 )
 
 require (
