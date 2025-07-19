@@ -34,8 +34,8 @@ COPY --from=builder /app/main .
 # Copy web directory for static files
 COPY --from=builder /app/web ./web
 
-# Copy environment file template
-COPY --from=builder /app/.env.example .
+
+
 
 # Set environment variables for production
 ENV GIN_MODE=release
