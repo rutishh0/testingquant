@@ -58,10 +58,12 @@ func main() {
     for id, conf := range connConfigs {
         if c, ok := core.Get(id); ok {
             if err := c.Init(conf); err != nil {
-                log.Fatalf("failed to init connector %s: %v", id, err)
+                log.Printf("Connector %s init error: %v – skipping", id, err)
+                continue
             }
             if err := c.HealthCheck(); err != nil {
-                log.Fatalf("connector %s health check failed: %v", id, err)
+                log.Printf("Connector %s health check failed: %v – skipping", id, err)
+                continue
             }
             log.Printf("Connector %s initialised and healthy", id)
         } else {

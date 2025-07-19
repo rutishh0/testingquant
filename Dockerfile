@@ -34,6 +34,9 @@ COPY --from=builder /app/main .
 # Copy web directory for static files
 COPY --from=builder /app/web ./web
 
+# Copy connector configuration
+COPY --from=builder /app/connectors.yaml .
+
 
 
 
