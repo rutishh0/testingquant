@@ -35,12 +35,22 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 	// Health and status endpoints
 	router.GET("/health", handlers.Health)
 	router.GET("/status", handlers.Status)
+	
+	// Serve documentation
+	router.GET("/docs", func(c *gin.Context) {
+		c.File("./docs/index.html")
+	})
 
-	// Serve developer portal
+	// Serve Next.js static files
 	router.Static("/web", "./web")
+	
+	// Serve the Next.js app at root
 	router.GET("/", func(c *gin.Context) {
 		c.File("./web/index.html")
 	})
+	
+	// Handle Next.js static assets
+	router.Static("/_next", "./web/_next")
 
 	// API v1 routes
 	v1 := router.Group("/v1")
