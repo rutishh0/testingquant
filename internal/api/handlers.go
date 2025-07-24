@@ -368,7 +368,7 @@ func (h *Handlers) GetOverledgerNetworks(c *gin.Context) {
 func (h *Handlers) GetOverledgerBalance(c *gin.Context) {
 	networkID := c.Param("networkId")
 	address := c.Param("address")
-	
+
 	if networkID == "" || address == "" {
 		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
 			Error:   "missing_parameters",

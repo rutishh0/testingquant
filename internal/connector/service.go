@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"time"
 
 	"github.com/rutishh0/testingquant/internal/clients"
@@ -213,7 +212,7 @@ func (s *service) CreateCoinbaseWalletAddress(walletID string, req *CreateCoinba
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
+}
 
 	var addressResp CoinbaseAddressResponse
 	if err := json.Unmarshal(body, &addressResp); err != nil {
@@ -243,7 +242,7 @@ func (s *service) GetCoinbaseTransactions(walletID string, limit int, cursor str
 	if err := json.Unmarshal(body, &transactionsResp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
-
+	
 	return &transactionsResp, nil
 }
 
@@ -267,7 +266,7 @@ func (s *service) GetCoinbaseAssets() (*CoinbaseAssetsResponse, error) {
 	if err := json.Unmarshal(body, &assetsResp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
-
+	
 	return &assetsResp, nil
 }
 
@@ -309,8 +308,8 @@ func (s *service) GetCoinbaseExchangeRates(baseCurrency string) (*CoinbaseExchan
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
-
+		}
+		
 	var ratesResp CoinbaseExchangeRatesResponse
 	if err := json.Unmarshal(body, &ratesResp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)

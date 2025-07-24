@@ -58,7 +58,7 @@ func TestNewService(t *testing.T) {
 	overledgerClient := &overledger.Client{}
 	
 	service := NewService(coinbaseClient, overledgerClient)
-	
+
 	assert.NotNil(t, service)
 }
 
@@ -68,7 +68,7 @@ func TestHealthCheck(t *testing.T) {
 	
 	mockCoinbase.On("Health").Return(nil)
 	mockOverledger.On("TestConnection").Return(nil)
-	
+
 	// Since we can't easily mock the actual service with these clients,
 	// we'll test the concept of the health check
 	assert.NotNil(t, mockCoinbase)
@@ -89,6 +89,6 @@ func TestOverledgerOperations(t *testing.T) {
 	result, err := mockOverledger.GetNetworks()
 	assert.NoError(t, err)
 	assert.Equal(t, expectedNetworks, result)
-	
+
 	mockOverledger.AssertExpectations(t)
 }

@@ -80,14 +80,14 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 		{
 			// Network information
 			overledger.GET("/networks", handlers.GetOverledgerNetworks)
-			
+
 			// Account balance operations
 			overledger.GET("/networks/:networkId/addresses/:address/balance", handlers.GetOverledgerBalance)
-			
+
 			// Transaction operations
 			overledger.POST("/transactions", handlers.CreateOverledgerTransaction)
 			overledger.GET("/networks/:networkId/transactions/:txHash/status", handlers.GetOverledgerTransactionStatus)
-			
+
 			// Connection test
 			overledger.GET("/test", handlers.TestOverledgerConnection)
 		}
