@@ -9,4 +9,4 @@ overledger:
   base_url: "https://api.sandbox.overledger.dev"
   client_id: "3nhqpst935v0kqumc3s76jcq46"
   client_secret: "102l0eabrqum4paldomv7l0o6e25i73utvn9htdv0rjjkusrblje"
-      auth_url: "https://auth.overledger.dev/oauth2/token"
+  auth_url: "https://auth.overledger.dev/oauth2/token"
