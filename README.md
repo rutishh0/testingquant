@@ -13,7 +13,7 @@ This connector serves as a translation layer between Quant Overledger and Coinba
 
 ## Architecture
 
-The connector consists of :
+The connector consists of:
 
 - **API Gateway**: HTTP server with authentication and routing
 - **Translation Engine**: Converts between Overledger and Mesh data models
