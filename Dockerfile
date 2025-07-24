@@ -49,6 +49,9 @@ COPY --from=frontend-builder /app/web/out ./web
 # Copy connector configuration
 COPY --from=go-builder /app/connectors.yaml .
 
+# Copy documentation
+COPY --from=go-builder /app/docs ./docs
+
 # Set environment variables for production
 ENV GIN_MODE=release
 ENV ENVIRONMENT=production

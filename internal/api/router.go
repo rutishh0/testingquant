@@ -105,10 +105,17 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 // apiKeyMiddleware validates API key from X-API-Key header
 func apiKeyMiddleware(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Skip API key validation for health, status, root, and web endpoints
+		// Skip API key validation for health, status, root, web endpoints, and static assets
 		path := c.Request.URL.Path
-		if path == "/health" || path == "/status" || path == "/" ||
-			strings.HasPrefix(path, "/web/") {
+		if path == "/health" || path == "/status" || path == "/" || path == "/docs" ||
+			strings.HasPrefix(path, "/web/") ||
+			strings.HasPrefix(path, "/_next/") ||
+			strings.HasPrefix(path, "/favicon.ico") ||
+			strings.HasPrefix(path, "/vercel.svg") ||
+			strings.HasPrefix(path, "/next.svg") ||
+			strings.HasPrefix(path, "/globe.svg") ||
+			strings.HasPrefix(path, "/file.svg") ||
+			strings.HasPrefix(path, "/window.svg") {
 			c.Next()
 			return
 		}
