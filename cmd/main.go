@@ -77,7 +77,7 @@ func main() {
 	}
 
 	// Setup router
-	router := api.SetupRouter(connectorService)
+	router := api.SetupRouter(connectorService, cfg)
 
 	// Start server
 	log.Printf("Starting Quant-Mesh Connector on %s", cfg.ServerAddress)

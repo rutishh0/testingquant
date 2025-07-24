@@ -138,10 +138,11 @@ func (c *Client) makeRequest(method, endpoint string, payload interface{}, respo
 	}
 
 	if resp.StatusCode >= 400 {
-		// Try to parse error response
-		var errorResp map[string]interface{}
-		if err := json.Unmarshal(respBody, &errorResp); err == nil {
-			return fmt.Errorf("Overledger API error: %v (status: %d)", errorResp, resp.StatusCode)
+		// Try to parse structured error response
+		var errorResp ErrorResponse
+		if err := json.Unmarshal(respBody, &errorResp); err == nil && errorResp.Error.Message != "" {
+			return fmt.Errorf("Overledger API error: %s (code: %s, details: %s, status: %d)",
+				errorResp.Error.Message, errorResp.Error.Code, errorResp.Error.Details, resp.StatusCode)
 		}
 		return fmt.Errorf("HTTP error: %d - %s", resp.StatusCode, string(respBody))
 	}

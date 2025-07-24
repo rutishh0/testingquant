@@ -1,9 +1,11 @@
 package api
 
 import (
+	"net/http"
 	"strings"
 	"time"
 
+	"github.com/rutishh0/testingquant/internal/config"
 	"github.com/rutishh0/testingquant/internal/connector"
 
 	"github.com/gin-contrib/cors"
@@ -11,7 +13,7 @@ import (
 )
 
 // SetupRouter configures and returns the Gin router
-func SetupRouter(connectorService connector.Service) *gin.Engine {
+func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.Engine {
 	router := gin.Default()
 
 	// CORS middleware
@@ -25,7 +27,7 @@ func SetupRouter(connectorService connector.Service) *gin.Engine {
 	}))
 
 	// API Key middleware
-	router.Use(apiKeyMiddleware())
+	router.Use(apiKeyMiddleware(cfg))
 
 	// Initialize handlers
 	handlers := NewHandlers(connectorService)
@@ -91,7 +93,7 @@ func SetupRouter(connectorService connector.Service) *gin.Engine {
 }
 
 // apiKeyMiddleware validates API key from X-API-Key header
-func apiKeyMiddleware() gin.HandlerFunc {
+func apiKeyMiddleware(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Skip API key validation for health, status, root, and web endpoints
 		path := c.Request.URL.Path
@@ -103,22 +105,21 @@ func apiKeyMiddleware() gin.HandlerFunc {
 
 		apiKey := c.GetHeader("X-API-Key")
 		if apiKey == "" {
-			c.JSON(401, gin.H{
+			c.JSON(http.StatusUnauthorized, gin.H{
 				"error":   "unauthorized",
 				"message": "API key is required",
-				"code":    401,
+				"code":    http.StatusUnauthorized,
 			})
 			c.Abort()
 			return
 		}
 
-		// In a real implementation, validate the API key against a database or service
-		// For now, we'll accept any non-empty API key
-		if len(apiKey) < 10 {
-			c.JSON(401, gin.H{
+		// Validate the API key
+		if cfg.APIKey != "" && apiKey != cfg.APIKey {
+			c.JSON(http.StatusUnauthorized, gin.H{
 				"error":   "unauthorized",
-				"message": "Invalid API key format",
-				"code":    401,
+				"message": "Invalid API key",
+				"code":    http.StatusUnauthorized,
 			})
 			c.Abort()
 			return
