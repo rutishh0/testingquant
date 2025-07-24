@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,7 @@ interface CombineRequest {
     network: string;
   };
   unsigned_transaction: string;
-  signatures: any[]; // Keeping signatures as any[] for flexibility
+  signatures: unknown[];
 }
 
 interface CombineResponse {
@@ -55,7 +55,7 @@ export default function Combine() {
           <Textarea
             className="min-h-[200px] font-mono"
             value={requestBody}
-            onChange={(e) => setRequestBody(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRequestBody(e.target.value)}
           />
         </CardContent>
         <CardFooter className="flex justify-between">

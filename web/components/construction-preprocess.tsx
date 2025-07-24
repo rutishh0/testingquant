@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,11 +12,11 @@ interface PreprocessRequest {
     blockchain: string;
     network: string;
   };
-  operations: any[];
+  operations: unknown[];
 }
 
 interface PreprocessResponse {
-  options?: { [key: string]: any };
+  options?: Record<string, unknown>;
   required_public_keys?: string[];
 }
 
@@ -54,7 +54,7 @@ export default function Preprocess() {
           <Textarea
             className="min-h-[200px] font-mono"
             value={requestBody}
-            onChange={(e) => setRequestBody(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRequestBody(e.target.value)}
           />
         </CardContent>
         <CardFooter className="flex justify-between">
