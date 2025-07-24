@@ -3,7 +3,7 @@
 # Values are arbitrary key/value pairs passed to the connector's Init() method.
 
 mesh:
-  base_url: "https://testingquant-production.up.railway.app"
+  base_url: "expensive-hippopotamus-elevate-ed-0d43476c.koyeb.app"
 
 overledger:
   base_url: "https://api.sandbox.overledger.dev"
