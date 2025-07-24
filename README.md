@@ -47,7 +47,7 @@ cp .env.example .env
 4. Update `.env` with your configuration:
 ```env
 SERVER_ADDRESS=:8080
-MESH_API_URL=http://localhost:8081
+MESH_API_URL=http://localhost:8081  # Optional: URL of a Coinbase Mesh implementation
 API_KEY=your-api-key-here
 ENVIRONMENT=development
 LOG_LEVEL=info
@@ -234,7 +234,7 @@ go build -o bin/connector cmd/main.go
 | Environment Variable | Description | Default |
 |----------------------|-------------|----------|
 | `SERVER_ADDRESS` | Server bind address | `:8080` |
-| `MESH_API_URL` | Coinbase Mesh API URL | `http://localhost:8081` |
+| `MESH_API_URL` | Coinbase Mesh API URL (optional) | Empty string (disabled) |
 | `API_KEY` | API authentication key | - |
 | `ENVIRONMENT` | Runtime environment | `development` |
 | `LOG_LEVEL` | Logging level | `info` |
