@@ -35,7 +35,7 @@ export default function Submit() {
     setError('');
     setResponse(null);
     try {
-      const result = await apiClient.post<SubmitRequest, SubmitResponse>('/construction/submit', JSON.parse(requestBody));
+      const result = await apiClient.post<SubmitRequest, SubmitResponse>('/v1/construction/submit', JSON.parse(requestBody));
       setResponse(result);
     } catch (err) {
       if (err instanceof Error) {

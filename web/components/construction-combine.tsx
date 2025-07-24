@@ -34,7 +34,7 @@ export default function Combine() {
     setError('');
     setResponse(null);
     try {
-      const result = await apiClient.post<CombineRequest, CombineResponse>('/construction/combine', JSON.parse(requestBody));
+      const result = await apiClient.post<CombineRequest, CombineResponse>('/v1/construction/combine', JSON.parse(requestBody));
       setResponse(result);
     } catch (err) {
       if (err instanceof Error) {

@@ -33,7 +33,7 @@ export default function Preprocess() {
     setError('');
     setResponse(null);
     try {
-      const result = await apiClient.post<PreprocessRequest, PreprocessResponse>('/construction/preprocess', JSON.parse(requestBody));
+      const result = await apiClient.post<PreprocessRequest, PreprocessResponse>('/v1/construction/preprocess', JSON.parse(requestBody));
       setResponse(result);
     } catch (err) {
       if (err instanceof Error) {

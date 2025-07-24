@@ -41,7 +41,7 @@ export default function Payloads() {
     setError('');
     setResponse(null);
     try {
-      const result = await apiClient.post<PayloadsRequest, PayloadsResponse>('/construction/payloads', JSON.parse(requestBody));
+      const result = await apiClient.post<PayloadsRequest, PayloadsResponse>('/v1/construction/payloads', JSON.parse(requestBody));
       setResponse(result);
     } catch (err) {
       if (err instanceof Error) {
