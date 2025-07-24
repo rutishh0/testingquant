@@ -98,19 +98,19 @@ export default function Home() {
               </Card>
 
               <Card className="border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/50">
-                <CardHeader>
+              <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <TrendingUp className="w-5 h-5 text-green-600" />
                     <span>Assets & Trading</span>
                   </CardTitle>
-                  <CardDescription>
+                <CardDescription>
                     View available assets, exchange rates, and trading pairs
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                   <CoinbaseAssets />
-                </CardContent>
-              </Card>
+              </CardContent>
+            </Card>
             </div>
           </TabsContent>
 
@@ -133,19 +133,19 @@ export default function Home() {
               </Card>
 
               <Card className="border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/50">
-                <CardHeader>
+              <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <Activity className="w-5 h-5 text-orange-600" />
                     <span>Cross-Chain Transactions</span>
                   </CardTitle>
-                  <CardDescription>
+                <CardDescription>
                     Execute and monitor cross-chain transactions across networks
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                   <OverledgerTransactions />
-                </CardContent>
-              </Card>
+              </CardContent>
+            </Card>
             </div>
           </TabsContent>
 
