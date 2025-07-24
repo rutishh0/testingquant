@@ -10,6 +10,9 @@ RUN npm install
 # Copy the rest of the frontend source code
 COPY web/ . 
 
+# Remove legacy construction PoC components that were deleted from the codebase but may linger in Docker cache
+RUN rm -f ./components/construction-*.tsx || true
+
 # Build the static frontend
 RUN npm run build
 
@@ -45,9 +48,6 @@ COPY --from=go-builder /app/main .
 # Copy the built frontend from the frontend-builder stage
 # The output of 'next export' is in the 'out' directory
 COPY --from=frontend-builder /app/web/out ./web
-
-# Copy connector configuration
-COPY --from=go-builder /app/connectors.yaml .
 
 # Copy documentation
 COPY --from=go-builder /app/docs ./docs
