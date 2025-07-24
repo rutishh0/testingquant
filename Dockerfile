@@ -32,7 +32,7 @@ WORKDIR /root/
 COPY --from=builder /app/main .
 
 # Copy web directory for static files
-COPY --from=builder /app/web ./web
+COPY --from=builder /app/web ./testingquant
 
 # Copy connector configuration
 COPY --from=builder /app/connectors.yaml .
