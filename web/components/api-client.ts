@@ -1,11 +1,16 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080');
+const API_BASE_URL = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080';
 
 async function post<T, U>(endpoint: string, body: T): Promise<U> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  // Add API key for authentication
+  headers['X-API-Key'] = 'development-api-key-12345678901234567890';
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify(body),
   });
 

@@ -22,8 +22,44 @@ interface PreprocessResponse {
 
 export default function Preprocess() {
   const [requestBody, setRequestBody] = useState(JSON.stringify({
-    network_identifier: { blockchain: "ethereum", network: "goerli" },
-    operations: []
+    "network_identifier": {
+      "blockchain": "ethereum",
+      "network": "sepolia"
+    },
+    "operations": [
+      {
+        "operation_identifier": {
+          "index": 0
+        },
+        "type": "TRANSFER",
+        "account": {
+          "address": "0xYourSenderAddress"
+        },
+        "amount": {
+          "value": "-10000000000000000",
+          "currency": {
+            "symbol": "ETH",
+            "decimals": 18
+          }
+        }
+      },
+      {
+        "operation_identifier": {
+          "index": 1
+        },
+        "type": "TRANSFER",
+        "account": {
+          "address": "0xYourReceiverAddress"
+        },
+        "amount": {
+          "value": "10000000000000000",
+          "currency": {
+            "symbol": "ETH",
+            "decimals": 18
+          }
+        }
+      }
+    ]
   }, null, 2));
   const [response, setResponse] = useState<PreprocessResponse | null>(null);
   const [error, setError] = useState('');
