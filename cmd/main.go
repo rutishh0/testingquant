@@ -5,14 +5,10 @@ import (
     "os"
 
     "github.com/rutishh0/testingquant/internal/api"
+    "github.com/rutishh0/testingquant/internal/clients"
     "github.com/rutishh0/testingquant/internal/config"
     "github.com/rutishh0/testingquant/internal/connector"
-    "github.com/rutishh0/testingquant/internal/mesh"
     "github.com/rutishh0/testingquant/internal/overledger"
-
-    core "github.com/rutishh0/testingquant/internal/core"
-    _ "github.com/rutishh0/testingquant/internal/adapters/mesh"
-    _ "github.com/rutishh0/testingquant/internal/adapters/overledger"
 
     "github.com/gin-gonic/gin"
     "github.com/joho/godotenv"
@@ -26,53 +22,38 @@ func main() {
 
 	// Load configuration
 	cfg := config.LoadConfig()
+	log.Printf("Starting Quant Connector Service...")
 
-	// Initialize Mesh client
-	meshClient := mesh.NewClient(cfg.MeshAPIURL)
+	// Initialize Coinbase client (only if credentials are provided)
+	var coinbaseClient *clients.CoinbaseClient
+	if cfg.CoinbaseAPIKeyID != "" && cfg.CoinbaseAPISecret != "" {
+		coinbaseClient = clients.NewCoinbaseClient()
+		log.Printf("Coinbase client initialized")
+	} else {
+		log.Println("Coinbase credentials not configured, Coinbase functionality disabled")
+	}
 
-	// Initialize Overledger client
-	overledgerClient := overledger.NewClient(cfg)
-	log.Printf("Overledger API URL: %s", cfg.OverledgerBaseURL)
+	// Initialize Overledger client (only if credentials are provided)
+	var overledgerClient *overledger.Client
+	if cfg.OverledgerClientID != "" && cfg.OverledgerClientSecret != "" {
+		overledgerClient = overledger.NewClient(cfg)
+		log.Printf("Overledger client initialized")
+		
+		// Test Overledger connection
+		if err := overledgerClient.TestConnection(); err != nil {
+			log.Printf("Warning: Overledger connection test failed: %v", err)
+		} else {
+			log.Printf("Overledger connection successful")
+		}
+	} else {
+		log.Println("Overledger credentials not configured, Overledger functionality disabled")
+	}
 
 	// Initialize connector service
-    connectorService := connector.NewService(meshClient, overledgerClient)
-
-    // Initialize modular adapters via registry
-    // Load connector configs from YAML if available
-    connConfigs, err := core.LoadConnectorConfigs("connectors.yaml")
-    if err != nil {
-        log.Printf("could not read connectors.yaml: %v – falling back to env vars", err)
-        connConfigs = map[string]map[string]any{
-            "mesh": {
-                "base_url": cfg.MeshAPIURL,
-            },
-            "overledger": {
-                "base_url":      cfg.OverledgerBaseURL,
-                "client_id":     cfg.OverledgerClientID,
-                "client_secret": cfg.OverledgerClientSecret,
-                "auth_url":      cfg.OverledgerAuthURL,
-            },
-        }
-    }
-
-    for id, conf := range connConfigs {
-        if c, ok := core.Get(id); ok {
-            if err := c.Init(conf); err != nil {
-                log.Printf("Connector %s init error: %v – skipping", id, err)
-                continue
-            }
-            if err := c.HealthCheck(); err != nil {
-                log.Printf("Connector %s health check failed: %v – skipping", id, err)
-                continue
-            }
-            log.Printf("Connector %s initialised and healthy", id)
-        } else {
-            log.Printf("Connector %s not registered", id)
-        }
-    }
+    connectorService := connector.NewService(coinbaseClient, overledgerClient)
 
 	// Set Gin mode based on environment
-	if os.Getenv("GIN_MODE") == "release" {
+	if cfg.IsProduction() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
@@ -80,10 +61,22 @@ func main() {
 	router := api.SetupRouter(connectorService, cfg)
 
 	// Start server
-	log.Printf("Starting Quant-Mesh Connector on %s", cfg.ServerAddress)
-	log.Printf("Mesh API URL: %s", cfg.MeshAPIURL)
+	log.Printf("🚀 Starting Quant Connector Service on %s", cfg.ServerAddress)
+	log.Printf("📊 Environment: %s", cfg.Environment)
+	
+	if coinbaseClient != nil {
+		log.Printf("✅ Coinbase integration: ENABLED")
+	} else {
+		log.Printf("❌ Coinbase integration: DISABLED (missing credentials)")
+	}
+	
+	if overledgerClient != nil {
+		log.Printf("✅ Overledger integration: ENABLED")
+	} else {
+		log.Printf("❌ Overledger integration: DISABLED (missing credentials)")
+	}
 	
 	if err := router.Run(cfg.ServerAddress); err != nil {
-		log.Fatal("Failed to start server:", err)
+		log.Fatal("❌ Failed to start server:", err)
 	}
 }

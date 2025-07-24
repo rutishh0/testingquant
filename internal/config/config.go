@@ -7,10 +7,14 @@ import (
 // Config holds the application configuration
 type Config struct {
 	ServerAddress string
-	MeshAPIURL    string
 	APIKey        string
 	Environment   string
 	LogLevel      string
+	
+	// Coinbase API Configuration
+	CoinbaseAPIKeyID  string
+	CoinbaseAPISecret string
+	CoinbaseAPIURL    string
 	
 	// Overledger OAuth2 Configuration
 	OverledgerClientID     string
@@ -21,7 +25,7 @@ type Config struct {
 
 // LoadConfig loads configuration from environment variables
 func LoadConfig() *Config {
-	// Railway provides PORT environment variable
+	// Railway/Koyeb provides PORT environment variable
 	port := getEnv("PORT", "8080")
 	if port[0] != ':' {
 		port = ":" + port
@@ -29,10 +33,14 @@ func LoadConfig() *Config {
 	
 	return &Config{
 		ServerAddress: getEnv("SERVER_ADDRESS", port),
-		MeshAPIURL:    getEnv("MESH_API_URL", "http://localhost:8081"),
 		APIKey:        getEnv("API_KEY", ""),
 		Environment:   getEnv("ENVIRONMENT", "development"),
 		LogLevel:      getEnv("LOG_LEVEL", "info"),
+		
+		// Coinbase API Configuration
+		CoinbaseAPIKeyID:  getEnv("COINBASE_API_KEY_ID", ""),
+		CoinbaseAPISecret: getEnv("COINBASE_API_SECRET", ""),
+		CoinbaseAPIURL:    getEnv("COINBASE_API_URL", "https://api.cdp.coinbase.com"),
 		
 		// Overledger OAuth2 Configuration
 		OverledgerClientID:     getEnv("OVERLEDGER_CLIENT_ID", ""),
@@ -58,4 +66,14 @@ func (c *Config) IsProduction() bool {
 // IsDevelopment returns true if running in development environment
 func (c *Config) IsDevelopment() bool {
 	return c.Environment == "development"
+}
+
+// HasCoinbaseCredentials returns true if Coinbase API credentials are configured
+func (c *Config) HasCoinbaseCredentials() bool {
+	return c.CoinbaseAPIKeyID != "" && c.CoinbaseAPISecret != ""
+}
+
+// HasOverledgerCredentials returns true if Overledger API credentials are configured  
+func (c *Config) HasOverledgerCredentials() bool {
+	return c.OverledgerClientID != "" && c.OverledgerClientSecret != ""
 }

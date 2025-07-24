@@ -1,189 +1,234 @@
 package connector
 
-// Overledger-compatible request/response models
+import "time"
 
-// PreprocessRequest represents an Overledger preprocess request
-type PreprocessRequest struct {
-	DLT       string                 `json:"dlt" binding:"required"`
-	Network   string                 `json:"network" binding:"required"`
-	Type      string                 `json:"type" binding:"required"`
-	Transfers []Transfer             `json:"transfers,omitempty"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+// Coinbase API Models
+
+type CoinbaseWalletsResponse struct {
+	Data    []CoinbaseWallet `json:"data"`
+	HasMore bool             `json:"has_more"`
+	Cursor  string           `json:"cursor,omitempty"`
 }
 
-// PreprocessResponse represents an Overledger preprocess response
-type PreprocessResponse struct {
-	Options             map[string]interface{} `json:"options,omitempty"`
-	RequiredSigners     []string               `json:"requiredSigners,omitempty"`
-	TransactionFee      string                 `json:"transactionFee"`
-	GatewayFee          string                 `json:"gatewayFee"`
-	PreparedTransaction map[string]interface{} `json:"preparedTransaction"`
+type CoinbaseWallet struct {
+	ID               string            `json:"id"`
+	Name             string            `json:"name"`
+	PrimaryAddress   string            `json:"primary_address"`
+	DefaultNetwork   CoinbaseNetwork   `json:"default_network"`
+	CreatedAt        time.Time         `json:"created_at"`
+	UpdatedAt        time.Time         `json:"updated_at"`
+	Features         []string          `json:"features"`
 }
 
-// PayloadsRequest represents an Overledger payloads request
-type PayloadsRequest struct {
-	DLT        string                 `json:"dlt" binding:"required"`
-	Network    string                 `json:"network" binding:"required"`
-	Type       string                 `json:"type" binding:"required"`
-	Transfers  []Transfer             `json:"transfers,omitempty"`
-	PublicKeys []PublicKey            `json:"publicKeys,omitempty"`
-	Metadata   map[string]interface{} `json:"metadata,omitempty"`
+type CoinbaseNetwork struct {
+	ID          string `json:"id"`
+	DisplayName string `json:"display_name"`
+	ChainID     int    `json:"chain_id"`
+	IsTestnet   bool   `json:"is_testnet"`
 }
 
-// PayloadsResponse represents an Overledger payloads response
-type PayloadsResponse struct {
-	UnsignedTransaction string           `json:"unsignedTransaction"`
-	Payloads            []SigningPayload `json:"payloads"`
+type CreateCoinbaseWalletRequest struct {
+	Name           string `json:"name" binding:"required"`
+	UseServerSigner bool   `json:"use_server_signer,omitempty"`
 }
 
-// CombineRequest represents an Overledger combine request
-type CombineRequest struct {
-	DLT                 string                 `json:"dlt" binding:"required"`
-	Network             string                 `json:"network" binding:"required"`
-	UnsignedTransaction string                 `json:"unsignedTransaction" binding:"required"`
-	Signatures          []Signature            `json:"signatures" binding:"required"`
-	Metadata            map[string]interface{} `json:"metadata,omitempty"`
+type CoinbaseWalletResponse struct {
+	Data CoinbaseWallet `json:"data"`
 }
 
-// CombineResponse represents an Overledger combine response
-type CombineResponse struct {
-	SignedTransaction string `json:"signedTransaction"`
+type CoinbaseBalanceResponse struct {
+	Data    []CoinbaseBalance `json:"data"`
+	HasMore bool              `json:"has_more"`
+	Cursor  string            `json:"cursor,omitempty"`
 }
 
-// SubmitRequest represents an Overledger submit request
-type SubmitRequest struct {
-	DLT               string                 `json:"dlt" binding:"required"`
-	Network           string                 `json:"network" binding:"required"`
-	SignedTransaction string                 `json:"signedTransaction" binding:"required"`
-	Metadata          map[string]interface{} `json:"metadata,omitempty"`
+type CoinbaseBalance struct {
+	Amount   string         `json:"amount"`
+	Asset    CoinbaseAsset  `json:"asset"`
+	Network  CoinbaseNetwork `json:"network"`
 }
 
-// SubmitResponse represents an Overledger submit response
-type SubmitResponse struct {
-	TransactionID string                 `json:"transactionId"`
-	Status        string                 `json:"status"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+type CoinbaseAsset struct {
+	AssetID         string `json:"asset_id"`
+	Name            string `json:"name"`
+	Symbol          string `json:"symbol"`
+	Decimals        int    `json:"decimals"`
+	DisplayName     string `json:"display_name"`
+	AddressFormat   string `json:"address_format"`
+	ContractAddress string `json:"contract_address,omitempty"`
 }
 
-// BalanceRequest represents an Overledger balance request
-type BalanceRequest struct {
-	DLT      string                 `json:"dlt" binding:"required"`
-	Network  string                 `json:"network" binding:"required"`
-	Address  string                 `json:"address" binding:"required"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+type CreateCoinbaseTransactionRequest struct {
+	WalletID          string                     `json:"-"`
+	Amount            string                     `json:"amount" binding:"required"`
+	AssetID           string                     `json:"asset_id" binding:"required"`
+	Destination       string                     `json:"destination" binding:"required"`
+	GaslessSend       bool                       `json:"gasless_send,omitempty"`
+	Network           string                     `json:"network,omitempty"`
+	Speed             string                     `json:"speed,omitempty"`
+	FeeRate           string                     `json:"fee_rate,omitempty"`
+	DestinationTag    string                     `json:"destination_tag,omitempty"`
 }
 
-// BalanceResponse represents an Overledger balance response
-type BalanceResponse struct {
-	Address  string                 `json:"address"`
-	Balances []Balance              `json:"balances"`
-	Block    BlockInfo              `json:"block"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+type CoinbaseTransactionResponse struct {
+	Data CoinbaseTransaction `json:"data"`
 }
 
-// BlockRequest represents an Overledger block request
-type BlockRequest struct {
-	DLT         string                 `json:"dlt" binding:"required"`
-	Network     string                 `json:"network" binding:"required"`
-	BlockNumber *uint64                `json:"blockNumber,omitempty"`
-	BlockHash   string                 `json:"blockHash,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+type CoinbaseTransaction struct {
+	TransactionID     string                   `json:"transaction_id"`
+	Status            string                       `json:"status"`
+	UnsignedPayload   string                   `json:"unsigned_payload,omitempty"`
+	SignedPayload     string                   `json:"signed_payload,omitempty"`
+	TransactionHash   string                   `json:"transaction_hash,omitempty"`
+	TransactionLink   string                   `json:"transaction_link,omitempty"`
+	FromAddress       string                   `json:"from_address"`
+	ToAddress         string                   `json:"to_address"`
+	Amount            string                   `json:"amount"`
+	NetworkFee        string                   `json:"network_fee"`
+	Asset             CoinbaseAsset            `json:"asset"`
+	Network           CoinbaseNetwork          `json:"network"`
+	CreatedAt         time.Time                `json:"created_at"`
+	UpdatedAt         time.Time                `json:"updated_at"`
 }
 
-// BlockResponse represents an Overledger block response
-type BlockResponse struct {
-	BlockID      string                 `json:"blockId"`
-	Number       int64                  `json:"number"`
-	Transactions []TransactionInfo      `json:"transactions"`
-	Timestamp    int64                  `json:"timestamp"`
-	ParentHash   string                 `json:"parentHash"`
-	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+// Additional Coinbase API Models
+
+type CoinbaseAddressesResponse struct {
+	Data    []CoinbaseAddress `json:"data"`
+	HasMore bool              `json:"has_more"`
+	Cursor  string            `json:"cursor,omitempty"`
 }
 
-// TransactionRequest represents an Overledger transaction request
-type TransactionRequest struct {
-	DLT           string                 `json:"dlt" binding:"required"`
-	Network       string                 `json:"network" binding:"required"`
-	TransactionID string                 `json:"transactionId" binding:"required"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+type CoinbaseAddress struct {
+	ID          string          `json:"id"`
+	Address     string          `json:"address"`
+	Network     CoinbaseNetwork `json:"network"`
+	CreatedAt   time.Time       `json:"created_at"`
+	UpdatedAt   time.Time       `json:"updated_at"`
+	PublicKey   string          `json:"public_key,omitempty"`
+	AddressInfo CoinbaseAddressInfo `json:"address_info,omitempty"`
 }
 
-// TransactionResponse represents an Overledger transaction response
-type TransactionResponse struct {
-	TxID      string                 `json:"txId"`
-	Status    string                 `json:"status"`
-	Block     BlockInfo              `json:"block"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+type CoinbaseAddressInfo struct {
+	Balance   string `json:"balance,omitempty"`
+	Received  string `json:"received,omitempty"`
+	Sent      string `json:"sent,omitempty"`
+	TxCount   int    `json:"tx_count,omitempty"`
 }
 
-// Transfer represents a token transfer
-type Transfer struct {
-	From        string                 `json:"from" binding:"required"`
-	To          string                 `json:"to" binding:"required"`
-	Amount      string                 `json:"amount" binding:"required"`
-	TokenSymbol string                 `json:"tokenSymbol" binding:"required"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+type CreateCoinbaseAddressRequest struct {
+	Name       string `json:"name,omitempty"`
+	NetworkID  string `json:"network_id" binding:"required"`
 }
 
-// PublicKey represents a public key
-type PublicKey struct {
-	HexBytes  string `json:"hexBytes" binding:"required"`
-	CurveType string `json:"curveType" binding:"required"`
+type CoinbaseAddressResponse struct {
+	Data CoinbaseAddress `json:"data"`
 }
 
-// SigningPayload represents data to be signed
-type SigningPayload struct {
-	Address       string `json:"address,omitempty"`
-	HexBytes      string `json:"hexBytes" binding:"required"`
-	SignatureType string `json:"signatureType,omitempty"`
+type CoinbaseTransactionsResponse struct {
+	Data    []CoinbaseTransaction `json:"data"`
+	HasMore bool                  `json:"has_more"`
+	Cursor  string                `json:"cursor,omitempty"`
+	Total   int                   `json:"total,omitempty"`
 }
 
-// Signature represents a cryptographic signature
-type Signature struct {
-	PublicKey      PublicKey `json:"publicKey" binding:"required"`
-	SignatureType  string    `json:"signatureType" binding:"required"`
-	SignatureBytes string    `json:"signatureBytes" binding:"required"`
-	HexBytes       string    `json:"hexBytes" binding:"required"`
+type CoinbaseAssetsResponse struct {
+	Data    []CoinbaseAssetInfo `json:"data"`
+	HasMore bool                `json:"has_more"`
+	Cursor  string              `json:"cursor,omitempty"`
 }
 
-// Balance represents an account balance
-type Balance struct {
-	Amount      string                 `json:"amount"`
-	TokenSymbol string                 `json:"tokenSymbol"`
-	Decimals    int32                  `json:"decimals"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+type CoinbaseAssetInfo struct {
+	AssetID         string `json:"asset_id"`
+	Name            string `json:"name"`
+	Symbol          string `json:"symbol"`
+	Decimals        int    `json:"decimals"`
+	DisplayName     string `json:"display_name"`
+	AddressFormat   string `json:"address_format"`
+	ExplorerURL     string `json:"explorer_url,omitempty"`
+	ContractAddress string `json:"contract_address,omitempty"`
+	ImageURL        string `json:"image_url,omitempty"`
+	SupportedNetworks []CoinbaseNetwork `json:"supported_networks,omitempty"`
 }
 
-// BlockInfo represents basic block information
-type BlockInfo struct {
-	Number int64  `json:"number"`
-	Hash   string `json:"hash"`
+type CoinbaseNetworksResponse struct {
+	Data    []CoinbaseNetworkInfo `json:"data"`
+	HasMore bool                  `json:"has_more"`
+	Cursor  string                `json:"cursor,omitempty"`
 }
 
-// TransactionInfo represents basic transaction information
-type TransactionInfo struct {
-	TxID     string                 `json:"txId"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+type CoinbaseNetworkInfo struct {
+	ID                 string   `json:"id"`
+	DisplayName        string   `json:"display_name"`
+	ChainID            int      `json:"chain_id"`
+	IsTestnet          bool     `json:"is_testnet"`
+	BlockExplorerURL   string   `json:"block_explorer_url,omitempty"`
+	NativeCurrency     CoinbaseAsset `json:"native_currency"`
+	SupportedAssets    []string `json:"supported_assets,omitempty"`
+	FeaturesToSupport  []string `json:"features_to_support,omitempty"`
 }
 
-// ErrorResponse represents an error response
-type ErrorResponse struct {
-	Error   string `json:"error"`
-	Message string `json:"message"`
-	Code    int    `json:"code,omitempty"`
+type CoinbaseExchangeRatesResponse struct {
+	Data CoinbaseExchangeRates `json:"data"`
 }
 
-// HealthResponse represents a health check response
+type CoinbaseExchangeRates struct {
+	Currency string                    `json:"currency"`
+	Rates    map[string]string         `json:"rates"`
+	UpdatedAt time.Time                `json:"updated_at"`
+}
+
+type EstimateFeeRequest struct {
+	Amount       string `json:"amount" binding:"required"`
+	AssetID      string `json:"asset_id" binding:"required"`
+	Destination  string `json:"destination" binding:"required"`
+	NetworkID    string `json:"network_id,omitempty"`
+	Speed        string `json:"speed,omitempty"` // "slow", "standard", "fast"
+}
+
+type EstimateFeeResponse struct {
+	Data CoinbaseFeeEstimate `json:"data"`
+}
+
+type CoinbaseFeeEstimate struct {
+	EstimatedFee  string        `json:"estimated_fee"`
+	AssetID       string        `json:"asset_id"`
+	NetworkID     string        `json:"network_id"`
+	Speed         string        `json:"speed"`
+	EstimatedTime string        `json:"estimated_time,omitempty"`
+	FeeBreakdown  []CoinbaseFeeBreakdown `json:"fee_breakdown,omitempty"`
+}
+
+type CoinbaseFeeBreakdown struct {
+	Type   string `json:"type"`
+	Amount string `json:"amount"`
+	Unit   string `json:"unit"`
+}
+
+// Health Check Models
+
 type HealthResponse struct {
-	Status    string `json:"status"`
-	Timestamp int64  `json:"timestamp"`
-	Version   string `json:"version"`
+	Status    string                    `json:"status"`
+	Timestamp int64                     `json:"timestamp"`
+	Services  map[string]ServiceHealth  `json:"services"`
 }
 
-// StatusResponse represents a status response
+type ServiceHealth struct {
+	Status string `json:"status"`
+	Error  string `json:"error,omitempty"`
+}
+
+// Legacy status response for backward compatibility
 type StatusResponse struct {
 	Service   string `json:"service"`
 	Status    string `json:"status"`
 	Uptime    string `json:"uptime"`
 	Timestamp int64  `json:"timestamp"`
+}
+
+// Error response model
+type ErrorResponse struct {
+	Error   string `json:"error"`
+	Message string `json:"message"`
+	Code    int    `json:"code"`
 }

@@ -1,476 +1,433 @@
 package connector
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/rutishh0/testingquant/internal/mesh"
+	"io"
+	"net/http"
+	"time"
+
+	"github.com/rutishh0/testingquant/internal/clients"
 	"github.com/rutishh0/testingquant/internal/overledger"
 )
 
 // Service defines the connector service interface
 type Service interface {
-	Preprocess(req *PreprocessRequest) (*PreprocessResponse, error)
-	Payloads(req *PayloadsRequest) (*PayloadsResponse, error)
-	Combine(req *CombineRequest) (*CombineResponse, error)
-	Submit(req *SubmitRequest) (*SubmitResponse, error)
-	GetBalance(req *BalanceRequest) (*BalanceResponse, error)
-	GetBlock(req *BlockRequest) (*BlockResponse, error)
-	GetTransaction(req *TransactionRequest) (*TransactionResponse, error)
-	// Overledger-specific methods
+	// Coinbase operations
+	GetCoinbaseWallets() (*CoinbaseWalletsResponse, error)
+	CreateCoinbaseWallet(req *CreateCoinbaseWalletRequest) (*CoinbaseWalletResponse, error)
+	GetCoinbaseWalletBalance(walletID string) (*CoinbaseBalanceResponse, error)
+	GetCoinbaseWalletAddresses(walletID string) (*CoinbaseAddressesResponse, error)
+	CreateCoinbaseWalletAddress(walletID string, req *CreateCoinbaseAddressRequest) (*CoinbaseAddressResponse, error)
+	CreateCoinbaseTransaction(req *CreateCoinbaseTransactionRequest) (*CoinbaseTransactionResponse, error)
+	GetCoinbaseTransaction(transactionID string) (*CoinbaseTransactionResponse, error)
+	GetCoinbaseTransactions(walletID string, limit int, cursor string) (*CoinbaseTransactionsResponse, error)
+	GetCoinbaseAssets() (*CoinbaseAssetsResponse, error)
+	GetCoinbaseNetworks() (*CoinbaseNetworksResponse, error)
+	GetCoinbaseExchangeRates(baseCurrency string) (*CoinbaseExchangeRatesResponse, error)
+	EstimateCoinbaseTransactionFee(walletID string, req *EstimateFeeRequest) (*EstimateFeeResponse, error)
+	
+	// Overledger operations
 	GetOverledgerNetworks() (*overledger.NetworksResponse, error)
 	GetOverledgerBalance(networkID, address string) (*overledger.BalanceResponse, error)
 	CreateOverledgerTransaction(req *overledger.TransactionRequest) (*overledger.TransactionResponse, error)
+	GetOverledgerTransactionStatus(networkID, txHash string) (*overledger.TransactionStatusResponse, error)
 	TestOverledgerConnection() error
-}
-
-// MeshClient defines the interface for the Mesh client.
-type MeshClient interface {
-	ConstructionPreprocess(req *mesh.ConstructionPreprocessRequest) (*mesh.ConstructionPreprocessResponse, error)
-	ConstructionPayloads(req *mesh.ConstructionPayloadsRequest) (*mesh.ConstructionPayloadsResponse, error)
-	ConstructionCombine(req *mesh.ConstructionCombineRequest) (*mesh.ConstructionCombineResponse, error)
-	ConstructionSubmit(req *mesh.ConstructionSubmitRequest) (*mesh.ConstructionSubmitResponse, error)
-	AccountBalance(req *mesh.AccountBalanceRequest) (*mesh.AccountBalanceResponse, error)
-	Block(req *mesh.BlockRequest) (*mesh.BlockResponse, error)
-}
-
-// OverledgerClient defines the interface for the Overledger client.
-type OverledgerClient interface {
-	GetNetworks() (*overledger.NetworksResponse, error)
-	GetAccountBalance(networkID, address string) (*overledger.BalanceResponse, error)
-	CreateTransaction(req *overledger.TransactionRequest) (*overledger.TransactionResponse, error)
-	TestConnection() error
+	
+	// Health and status
+	HealthCheck() (*HealthResponse, error)
 }
 
 // service implements the Service interface
 type service struct {
-	meshClient       MeshClient
-	overledgerClient OverledgerClient
+	coinbaseClient   *clients.CoinbaseClient
+	overledgerClient *overledger.Client
 }
 
 // NewService creates a new connector service
-func NewService(meshClient MeshClient, overledgerClient OverledgerClient) Service {
+func NewService(coinbaseClient *clients.CoinbaseClient, overledgerClient *overledger.Client) Service {
 	return &service{
-		meshClient:       meshClient,
+		coinbaseClient:   coinbaseClient,
 		overledgerClient: overledgerClient,
 	}
 }
 
-// Preprocess handles the preprocess request
-func (s *service) Preprocess(req *PreprocessRequest) (*PreprocessResponse, error) {
-	if req == nil {
-		return nil, errors.New("request cannot be nil")
+// Coinbase operations
+
+func (s *service) GetCoinbaseWallets() (*CoinbaseWalletsResponse, error) {
+	if s.coinbaseClient == nil {
+		return nil, errors.New("coinbase client not initialized")
 	}
 
-	// Map Overledger request to Mesh request
-	meshReq := &mesh.ConstructionPreprocessRequest{
-		NetworkIdentifier: mesh.NetworkIdentifier{
-			Blockchain: req.DLT,
-			Network:    req.Network,
-		},
-		Operations: mapOperations(req),
-		Metadata:   req.Metadata,
-	}
-
-	// Call Mesh API
-	meshResp, err := s.meshClient.ConstructionPreprocess(meshReq)
+	resp, err := s.coinbaseClient.Get("/v1/wallets")
 	if err != nil {
-		return nil, fmt.Errorf("mesh preprocess failed: %w", err)
+		return nil, fmt.Errorf("failed to get wallets: %w", err)
 	}
+	defer resp.Body.Close()
 
-	// Map Mesh response to Overledger response
-	return &PreprocessResponse{
-		Options:            meshResp.Options,
-		RequiredSigners:    mapRequiredSigners(meshResp.RequiredPublicKeys),
-		TransactionFee:     calculateTransactionFee(),
-		GatewayFee:         "0",
-		PreparedTransaction: generatePreparedTransaction(meshResp),
-	}, nil
-}
-
-// Payloads handles the payloads request
-func (s *service) Payloads(req *PayloadsRequest) (*PayloadsResponse, error) {
-	if req == nil {
-		return nil, errors.New("request cannot be nil")
-	}
-
-	// Map Overledger request to Mesh request
-	meshReq := &mesh.ConstructionPayloadsRequest{
-		NetworkIdentifier: mesh.NetworkIdentifier{
-			Blockchain: req.DLT,
-			Network:    req.Network,
-		},
-		Operations: mapPayloadOperations(req),
-		Metadata:   req.Metadata,
-		PublicKeys: mapPublicKeys(req.PublicKeys),
-	}
-
-	// Call Mesh API
-	meshResp, err := s.meshClient.ConstructionPayloads(meshReq)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("mesh payloads failed: %w", err)
+		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	// Map Mesh response to Overledger response
-	return &PayloadsResponse{
-		UnsignedTransaction: meshResp.UnsignedTransaction,
-		Payloads:            mapSigningPayloads(meshResp.Payloads),
-	}, nil
+	var walletsResp CoinbaseWalletsResponse
+	if err := json.Unmarshal(body, &walletsResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &walletsResp, nil
 }
 
-// Combine handles the combine request
-func (s *service) Combine(req *CombineRequest) (*CombineResponse, error) {
-	if req == nil {
-		return nil, errors.New("request cannot be nil")
+func (s *service) CreateCoinbaseWallet(req *CreateCoinbaseWalletRequest) (*CoinbaseWalletResponse, error) {
+	if s.coinbaseClient == nil {
+		return nil, errors.New("coinbase client not initialized")
 	}
 
-	// Map Overledger request to Mesh request
-	meshReq := &mesh.ConstructionCombineRequest{
-		NetworkIdentifier: mesh.NetworkIdentifier{
-			Blockchain: req.DLT,
-			Network:    req.Network,
-		},
-		UnsignedTransaction: req.UnsignedTransaction,
-		Signatures:          mapSignatures(req.Signatures),
-	}
-
-	// Call Mesh API
-	meshResp, err := s.meshClient.ConstructionCombine(meshReq)
+	resp, err := s.coinbaseClient.Post("/v1/wallets", req)
 	if err != nil {
-		return nil, fmt.Errorf("mesh combine failed: %w", err)
+		return nil, fmt.Errorf("failed to create wallet: %w", err)
 	}
+	defer resp.Body.Close()
 
-	// Map Mesh response to Overledger response
-	return &CombineResponse{
-		SignedTransaction: meshResp.SignedTransaction,
-	}, nil
-}
-
-// Submit handles the submit request
-func (s *service) Submit(req *SubmitRequest) (*SubmitResponse, error) {
-	if req == nil {
-		return nil, errors.New("request cannot be nil")
-	}
-
-	// Map Overledger request to Mesh request
-	meshReq := &mesh.ConstructionSubmitRequest{
-		NetworkIdentifier: mesh.NetworkIdentifier{
-			Blockchain: req.DLT,
-			Network:    req.Network,
-		},
-		SignedTransaction: req.SignedTransaction,
-	}
-
-	// Call Mesh API
-	meshResp, err := s.meshClient.ConstructionSubmit(meshReq)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("mesh submit failed: %w", err)
+		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	// Map Mesh response to Overledger response
-	return &SubmitResponse{
-		TransactionID: meshResp.TransactionIdentifier.Hash,
-		Status:        "PENDING",
-		Metadata:      meshResp.Metadata,
-	}, nil
+	var walletResp CoinbaseWalletResponse
+	if err := json.Unmarshal(body, &walletResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &walletResp, nil
 }
 
-// GetBalance handles the balance request
-func (s *service) GetBalance(req *BalanceRequest) (*BalanceResponse, error) {
-	if req == nil {
-		return nil, errors.New("request cannot be nil")
+func (s *service) GetCoinbaseWalletBalance(walletID string) (*CoinbaseBalanceResponse, error) {
+	if s.coinbaseClient == nil {
+		return nil, errors.New("coinbase client not initialized")
 	}
 
-	// Map Overledger request to Mesh request
-	meshReq := &mesh.AccountBalanceRequest{
-		NetworkIdentifier: mesh.NetworkIdentifier{
-			Blockchain: req.DLT,
-			Network:    req.Network,
-		},
-		AccountIdentifier: mesh.AccountIdentifier{
-			Address:  req.Address,
-			Metadata: req.Metadata,
-		},
-	}
-
-	// Call Mesh API
-	meshResp, err := s.meshClient.AccountBalance(meshReq)
+	resp, err := s.coinbaseClient.Get(fmt.Sprintf("/v1/wallets/%s/balances", walletID))
 	if err != nil {
-		return nil, fmt.Errorf("mesh balance failed: %w", err)
+		return nil, fmt.Errorf("failed to get wallet balance: %w", err)
 	}
+	defer resp.Body.Close()
 
-	// Map Mesh response to Overledger response
-	return &BalanceResponse{
-		Address:  req.Address,
-		Balances: mapBalances(meshResp.Balances),
-		Block: BlockInfo{
-			Number: meshResp.BlockIdentifier.Index,
-			Hash:   meshResp.BlockIdentifier.Hash,
-		},
-		Metadata: meshResp.Metadata,
-	}, nil
-}
-
-// GetBlock handles the block request
-func (s *service) GetBlock(req *BlockRequest) (*BlockResponse, error) {
-	if req == nil {
-		return nil, errors.New("request cannot be nil")
-	}
-
-	// Map Overledger request to Mesh request
-	meshReq := &mesh.BlockRequest{
-		NetworkIdentifier: mesh.NetworkIdentifier{
-			Blockchain: req.DLT,
-			Network:    req.Network,
-		},
-		BlockIdentifier: mesh.PartialBlockIdentifier{},
-	}
-
-	// Set block identifier based on request
-	if req.BlockNumber != nil {
-		index := int64(*req.BlockNumber)
-		meshReq.BlockIdentifier.Index = &index
-	}
-
-	if req.BlockHash != "" {
-		meshReq.BlockIdentifier.Hash = &req.BlockHash
-	}
-
-	// Call Mesh API
-	meshResp, err := s.meshClient.Block(meshReq)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("mesh block failed: %w", err)
+		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	if meshResp.Block == nil {
-		return nil, errors.New("block not found")
+	var balanceResp CoinbaseBalanceResponse
+	if err := json.Unmarshal(body, &balanceResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	// Map Mesh response to Overledger response
-	return &BlockResponse{
-		BlockID: meshResp.Block.BlockIdentifier.Hash,
-		Number:  meshResp.Block.BlockIdentifier.Index,
-		Transactions: mapTransactions(meshResp.Block.Transactions),
-		Timestamp:    meshResp.Block.Timestamp,
-		ParentHash:   meshResp.Block.ParentBlockIdentifier.Hash,
-		Metadata:     meshResp.Block.Metadata,
-	}, nil
+	return &balanceResp, nil
 }
 
-// GetTransaction handles the transaction request
-func (s *service) GetTransaction(req *TransactionRequest) (*TransactionResponse, error) {
-	// This is a bit more complex as Mesh requires both block ID and transaction ID
-	// We'll need to search for the transaction in recent blocks
-	// For simplicity in this PoC, we'll return an error suggesting to use the block endpoint
-	return nil, errors.New("direct transaction lookup not supported in this PoC; use block endpoint instead")
-}
-
-// Helper functions for mapping between Overledger and Mesh models
-
-func mapOperations(req *PreprocessRequest) []mesh.Operation {
-	// Simplified implementation for PoC
-	// In a real implementation, this would map Overledger operations to Mesh operations
-	operations := make([]mesh.Operation, 0)
-	
-	// For a simple transfer
-	if req.Type == "TRANSFER" && len(req.Transfers) > 0 {
-		transfer := req.Transfers[0]
-		
-		// Add sender operation (debit)
-		operations = append(operations, mesh.Operation{
-			OperationIdentifier: mesh.OperationIdentifier{Index: 0},
-			Type:               "TRANSFER",
-			Account: &mesh.AccountIdentifier{
-				Address: transfer.From,
-			},
-			Amount: &mesh.Amount{
-				Value: "-" + transfer.Amount,
-				Currency: mesh.Currency{
-					Symbol:   transfer.TokenSymbol,
-					Decimals: 18, // Default for ETH, would be different for other tokens
-				},
-			},
-		})
-		
-		// Add recipient operation (credit)
-		operations = append(operations, mesh.Operation{
-			OperationIdentifier: mesh.OperationIdentifier{Index: 1},
-			RelatedOperations:   []mesh.OperationIdentifier{{Index: 0}},
-			Type:               "TRANSFER",
-			Account: &mesh.AccountIdentifier{
-				Address: transfer.To,
-			},
-			Amount: &mesh.Amount{
-				Value: transfer.Amount,
-				Currency: mesh.Currency{
-					Symbol:   transfer.TokenSymbol,
-					Decimals: 18, // Default for ETH, would be different for other tokens
-				},
-			},
-		})
+func (s *service) CreateCoinbaseTransaction(req *CreateCoinbaseTransactionRequest) (*CoinbaseTransactionResponse, error) {
+	if s.coinbaseClient == nil {
+		return nil, errors.New("coinbase client not initialized")
 	}
-	
-	return operations
-}
 
-func mapPayloadOperations(req *PayloadsRequest) []mesh.Operation {
-	// Similar to mapOperations but for payload requests
-	// For simplicity in this PoC, we'll use a similar implementation
-	operations := make([]mesh.Operation, 0)
-	
-	// For a simple transfer
-	if req.Type == "TRANSFER" && len(req.Transfers) > 0 {
-		transfer := req.Transfers[0]
-		
-		// Add sender operation (debit)
-		operations = append(operations, mesh.Operation{
-			OperationIdentifier: mesh.OperationIdentifier{Index: 0},
-			Type:               "TRANSFER",
-			Account: &mesh.AccountIdentifier{
-				Address: transfer.From,
-			},
-			Amount: &mesh.Amount{
-				Value: "-" + transfer.Amount,
-				Currency: mesh.Currency{
-					Symbol:   transfer.TokenSymbol,
-					Decimals: 18, // Default for ETH, would be different for other tokens
-				},
-			},
-		})
-		
-		// Add recipient operation (credit)
-		operations = append(operations, mesh.Operation{
-			OperationIdentifier: mesh.OperationIdentifier{Index: 1},
-			RelatedOperations:   []mesh.OperationIdentifier{{Index: 0}},
-			Type:               "TRANSFER",
-			Account: &mesh.AccountIdentifier{
-				Address: transfer.To,
-			},
-			Amount: &mesh.Amount{
-				Value: transfer.Amount,
-				Currency: mesh.Currency{
-					Symbol:   transfer.TokenSymbol,
-					Decimals: 18, // Default for ETH, would be different for other tokens
-				},
-			},
-		})
+	resp, err := s.coinbaseClient.Post(fmt.Sprintf("/v1/wallets/%s/transactions", req.WalletID), req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create transaction: %w", err)
 	}
-	
-	return operations
-}
+	defer resp.Body.Close()
 
-func mapRequiredSigners(accounts []mesh.AccountIdentifier) []string {
-	signers := make([]string, len(accounts))
-	for i, account := range accounts {
-		signers[i] = account.Address
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
-	return signers
-}
 
-func calculateTransactionFee() string {
-	// In a real implementation, this would calculate the fee based on the response
-	// For simplicity in this PoC, we'll return a fixed fee
-	return "0.001"
-}
-
-func generatePreparedTransaction(resp *mesh.ConstructionPreprocessResponse) map[string]interface{} {
-	// In a real implementation, this would generate a prepared transaction
-	// For simplicity in this PoC, we'll return the options from the response
-	return resp.Options
-}
-
-func mapPublicKeys(keys []PublicKey) []mesh.PublicKey {
-	meshKeys := make([]mesh.PublicKey, len(keys))
-	for i, key := range keys {
-		meshKeys[i] = mesh.PublicKey{
-			HexBytes:  key.HexBytes,
-			CurveType: key.CurveType,
-		}
+	var txResp CoinbaseTransactionResponse
+	if err := json.Unmarshal(body, &txResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
-	return meshKeys
+
+	return &txResp, nil
 }
 
-func mapSigningPayloads(payloads []mesh.SigningPayload) []SigningPayload {
-	result := make([]SigningPayload, len(payloads))
-	for i, payload := range payloads {
-		var address string
-		if payload.AccountIdentifier != nil {
-			address = payload.AccountIdentifier.Address
-		}
-		
-		var sigType string
-		if payload.SignatureType != nil {
-			sigType = *payload.SignatureType
-		}
-		
-		result[i] = SigningPayload{
-			Address:       address,
-			HexBytes:      payload.HexBytes,
-			SignatureType: sigType,
-		}
+func (s *service) GetCoinbaseTransaction(transactionID string) (*CoinbaseTransactionResponse, error) {
+	if s.coinbaseClient == nil {
+		return nil, errors.New("coinbase client not initialized")
 	}
-	return result
-}
 
-func mapSignatures(signatures []Signature) []mesh.Signature {
-	meshSigs := make([]mesh.Signature, len(signatures))
-	for i, sig := range signatures {
-		meshSigs[i] = mesh.Signature{
-			SigningPayload: mesh.SigningPayload{
-				HexBytes: sig.HexBytes,
-			},
-			PublicKey: mesh.PublicKey{
-				HexBytes:  sig.PublicKey.HexBytes,
-				CurveType: sig.PublicKey.CurveType,
-			},
-			SignatureType: sig.SignatureType,
-			HexBytes:     sig.SignatureBytes,
-		}
+	resp, err := s.coinbaseClient.Get(fmt.Sprintf("/v1/transactions/%s", transactionID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get transaction: %w", err)
 	}
-	return meshSigs
-}
+	defer resp.Body.Close()
 
-func mapBalances(amounts []mesh.Amount) []Balance {
-	balances := make([]Balance, len(amounts))
-	for i, amount := range amounts {
-		balances[i] = Balance{
-			Amount:      amount.Value,
-			TokenSymbol: amount.Currency.Symbol,
-			Decimals:    amount.Currency.Decimals,
-			Metadata:    amount.Metadata,
-		}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
-	return balances
-}
 
-func mapTransactions(txs []mesh.Transaction) []TransactionInfo {
-	result := make([]TransactionInfo, len(txs))
-	for i, tx := range txs {
-		result[i] = TransactionInfo{
-			TxID:     tx.TransactionIdentifier.Hash,
-			Metadata: tx.Metadata,
-		}
+	var txResp CoinbaseTransactionResponse
+	if err := json.Unmarshal(body, &txResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
-	return result
+
+	return &txResp, nil
 }
 
-// Overledger-specific method implementations
+func (s *service) GetCoinbaseWalletAddresses(walletID string) (*CoinbaseAddressesResponse, error) {
+	if s.coinbaseClient == nil {
+		return nil, errors.New("coinbase client not initialized")
+	}
 
-// GetOverledgerNetworks retrieves available networks from Overledger
+	resp, err := s.coinbaseClient.GetWalletAddresses(walletID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get wallet addresses: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	var addressesResp CoinbaseAddressesResponse
+	if err := json.Unmarshal(body, &addressesResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &addressesResp, nil
+}
+
+func (s *service) CreateCoinbaseWalletAddress(walletID string, req *CreateCoinbaseAddressRequest) (*CoinbaseAddressResponse, error) {
+	if s.coinbaseClient == nil {
+		return nil, errors.New("coinbase client not initialized")
+	}
+
+	resp, err := s.coinbaseClient.CreateWalletAddress(walletID, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create wallet address: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	var addressResp CoinbaseAddressResponse
+	if err := json.Unmarshal(body, &addressResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &addressResp, nil
+}
+
+func (s *service) GetCoinbaseTransactions(walletID string, limit int, cursor string) (*CoinbaseTransactionsResponse, error) {
+	if s.coinbaseClient == nil {
+		return nil, errors.New("coinbase client not initialized")
+	}
+
+	resp, err := s.coinbaseClient.GetTransactions(walletID, limit, cursor)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get transactions: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	var transactionsResp CoinbaseTransactionsResponse
+	if err := json.Unmarshal(body, &transactionsResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &transactionsResp, nil
+}
+
+func (s *service) GetCoinbaseAssets() (*CoinbaseAssetsResponse, error) {
+	if s.coinbaseClient == nil {
+		return nil, errors.New("coinbase client not initialized")
+	}
+
+	resp, err := s.coinbaseClient.GetAssets()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get assets: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	var assetsResp CoinbaseAssetsResponse
+	if err := json.Unmarshal(body, &assetsResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &assetsResp, nil
+}
+
+func (s *service) GetCoinbaseNetworks() (*CoinbaseNetworksResponse, error) {
+	if s.coinbaseClient == nil {
+		return nil, errors.New("coinbase client not initialized")
+	}
+
+	resp, err := s.coinbaseClient.GetNetworks()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get networks: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	var networksResp CoinbaseNetworksResponse
+	if err := json.Unmarshal(body, &networksResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &networksResp, nil
+}
+
+func (s *service) GetCoinbaseExchangeRates(baseCurrency string) (*CoinbaseExchangeRatesResponse, error) {
+	if s.coinbaseClient == nil {
+		return nil, errors.New("coinbase client not initialized")
+	}
+
+	resp, err := s.coinbaseClient.GetExchangeRates(baseCurrency)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get exchange rates: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	var ratesResp CoinbaseExchangeRatesResponse
+	if err := json.Unmarshal(body, &ratesResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &ratesResp, nil
+}
+
+func (s *service) EstimateCoinbaseTransactionFee(walletID string, req *EstimateFeeRequest) (*EstimateFeeResponse, error) {
+	if s.coinbaseClient == nil {
+		return nil, errors.New("coinbase client not initialized")
+	}
+
+	resp, err := s.coinbaseClient.EstimateTransactionFee(walletID, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to estimate transaction fee: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	var feeResp EstimateFeeResponse
+	if err := json.Unmarshal(body, &feeResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &feeResp, nil
+}
+
+// Overledger operations
+
 func (s *service) GetOverledgerNetworks() (*overledger.NetworksResponse, error) {
+	if s.overledgerClient == nil {
+		return nil, errors.New("overledger client not initialized")
+	}
 	return s.overledgerClient.GetNetworks()
 }
 
-// GetOverledgerBalance retrieves account balance from Overledger
 func (s *service) GetOverledgerBalance(networkID, address string) (*overledger.BalanceResponse, error) {
+	if s.overledgerClient == nil {
+		return nil, errors.New("overledger client not initialized")
+	}
 	return s.overledgerClient.GetAccountBalance(networkID, address)
 }
 
-// CreateOverledgerTransaction creates a transaction via Overledger
 func (s *service) CreateOverledgerTransaction(req *overledger.TransactionRequest) (*overledger.TransactionResponse, error) {
+	if s.overledgerClient == nil {
+		return nil, errors.New("overledger client not initialized")
+	}
 	return s.overledgerClient.CreateTransaction(req)
 }
 
-// TestOverledgerConnection tests the connection to Overledger API
+func (s *service) GetOverledgerTransactionStatus(networkID, txHash string) (*overledger.TransactionStatusResponse, error) {
+	if s.overledgerClient == nil {
+		return nil, errors.New("overledger client not initialized")
+	}
+	return s.overledgerClient.GetTransactionStatus(networkID, txHash)
+}
+
 func (s *service) TestOverledgerConnection() error {
+	if s.overledgerClient == nil {
+		return errors.New("overledger client not initialized")
+	}
 	return s.overledgerClient.TestConnection()
+}
+
+// Health and status
+
+func (s *service) HealthCheck() (*HealthResponse, error) {
+	health := &HealthResponse{
+		Status:    "healthy",
+		Timestamp: time.Now().Unix(),
+		Services:  make(map[string]ServiceHealth),
+	}
+
+	// Check Coinbase connection
+	if s.coinbaseClient != nil {
+		err := s.coinbaseClient.Health()
+		if err != nil {
+			health.Services["coinbase"] = ServiceHealth{
+				Status: "unhealthy",
+				Error:  err.Error(),
+			}
+			health.Status = "degraded"
+		} else {
+			health.Services["coinbase"] = ServiceHealth{
+				Status: "healthy",
+			}
+		}
+	} else {
+		health.Services["coinbase"] = ServiceHealth{
+			Status: "not_configured",
+		}
+	}
+
+	// Check Overledger connection
+	if s.overledgerClient != nil {
+		err := s.overledgerClient.TestConnection()
+		if err != nil {
+			health.Services["overledger"] = ServiceHealth{
+				Status: "unhealthy",
+				Error:  err.Error(),
+			}
+			health.Status = "degraded"
+		} else {
+			health.Services["overledger"] = ServiceHealth{
+				Status: "healthy",
+			}
+		}
+	} else {
+		health.Services["overledger"] = ServiceHealth{
+			Status: "not_configured",
+		}
+	}
+
+	return health, nil
 }

@@ -16,6 +16,18 @@ type CoinbaseClient struct {
 	Client  *http.Client
 }
 
+// CoinbaseError represents a Coinbase API error response
+type CoinbaseError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Details string `json:"details,omitempty"`
+}
+
+// CoinbaseErrorResponse represents the full error response structure
+type CoinbaseErrorResponse struct {
+	Error CoinbaseError `json:"error"`
+}
+
 func NewCoinbaseClient() *CoinbaseClient {
 	return &CoinbaseClient{
 		BaseURL: "https://api.cdp.coinbase.com",
@@ -56,7 +68,25 @@ func (c *CoinbaseClient) DoRequest(method, path string, body interface{}) (*http
 	}
 
 	// Execute the request
-	return c.Client.Do(req)
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %v", err)
+	}
+
+	// Handle API errors
+	if resp.StatusCode >= 400 {
+		defer resp.Body.Close()
+		respBody, _ := io.ReadAll(resp.Body)
+		
+		var errorResp CoinbaseErrorResponse
+		if err := json.Unmarshal(respBody, &errorResp); err == nil && errorResp.Error.Message != "" {
+			return nil, fmt.Errorf("Coinbase API error (%d): %s - %s", 
+				resp.StatusCode, errorResp.Error.Code, errorResp.Error.Message)
+		}
+		return nil, fmt.Errorf("HTTP error: %d - %s", resp.StatusCode, string(respBody))
+	}
+
+	return resp, nil
 }
 
 // Get makes a GET request to the Coinbase API
@@ -77,4 +107,77 @@ func (c *CoinbaseClient) Put(path string, body interface{}) (*http.Response, err
 // Delete makes a DELETE request to the Coinbase API
 func (c *CoinbaseClient) Delete(path string) (*http.Response, error) {
 	return c.DoRequest(http.MethodDelete, path, nil)
+}
+
+// Health checks the Coinbase API availability
+func (c *CoinbaseClient) Health() error {
+	// Use a simple GET request to check connectivity
+	resp, err := c.Get("/v1/wallets?limit=1")
+	if err != nil {
+		return fmt.Errorf("Coinbase API health check failed: %v", err)
+	}
+	defer resp.Body.Close()
+	return nil
+}
+
+// GetAssets retrieves available assets for trading
+func (c *CoinbaseClient) GetAssets() (*http.Response, error) {
+	return c.Get("/v1/assets")
+}
+
+// GetNetworks retrieves available networks
+func (c *CoinbaseClient) GetNetworks() (*http.Response, error) {
+	return c.Get("/v1/networks")
+}
+
+// GetPortfolio retrieves portfolio information
+func (c *CoinbaseClient) GetPortfolio() (*http.Response, error) {
+	return c.Get("/v1/portfolios")
+}
+
+// GetWalletAddresses retrieves addresses for a specific wallet
+func (c *CoinbaseClient) GetWalletAddresses(walletID string) (*http.Response, error) {
+	return c.Get(fmt.Sprintf("/v1/wallets/%s/addresses", walletID))
+}
+
+// CreateWalletAddress creates a new address for a wallet
+func (c *CoinbaseClient) CreateWalletAddress(walletID string, req interface{}) (*http.Response, error) {
+	return c.Post(fmt.Sprintf("/v1/wallets/%s/addresses", walletID), req)
+}
+
+// GetTransactions retrieves transactions for a wallet
+func (c *CoinbaseClient) GetTransactions(walletID string, limit int, cursor string) (*http.Response, error) {
+	path := fmt.Sprintf("/v1/wallets/%s/transactions", walletID)
+	if limit > 0 || cursor != "" {
+		path += "?"
+		if limit > 0 {
+			path += fmt.Sprintf("limit=%d", limit)
+		}
+		if cursor != "" {
+			if limit > 0 {
+				path += "&"
+			}
+			path += fmt.Sprintf("cursor=%s", cursor)
+		}
+	}
+	return c.Get(path)
+}
+
+// GetExchangeRates retrieves current exchange rates
+func (c *CoinbaseClient) GetExchangeRates(baseCurrency string) (*http.Response, error) {
+	path := "/v1/exchange-rates"
+	if baseCurrency != "" {
+		path += "?currency=" + baseCurrency
+	}
+	return c.Get(path)
+}
+
+// EstimateTransactionFee estimates the fee for a transaction
+func (c *CoinbaseClient) EstimateTransactionFee(walletID string, req interface{}) (*http.Response, error) {
+	return c.Post(fmt.Sprintf("/v1/wallets/%s/transactions/estimate-fee", walletID), req)
+}
+
+// BroadcastTransaction broadcasts a signed transaction
+func (c *CoinbaseClient) BroadcastTransaction(walletID string, req interface{}) (*http.Response, error) {
+	return c.Post(fmt.Sprintf("/v1/wallets/%s/transactions/broadcast", walletID), req)
 }

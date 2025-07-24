@@ -16,7 +16,7 @@ import (
 func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.Engine {
 	router := gin.Default()
 
-	// CORS middleware
+	// CORS middleware for production deployment
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -36,65 +36,59 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 	router.GET("/health", handlers.Health)
 	router.GET("/status", handlers.Status)
 	
-	// Serve documentation
-	router.GET("/docs", func(c *gin.Context) {
-		c.File("./docs/index.html")
-	})
-
-	// Serve Next.js static files
+	// Serve Next.js web application
 	router.Static("/web", "./web")
 	
-	// Serve the Next.js app at root
+	// Serve the Next.js app at root for production
 	router.GET("/", func(c *gin.Context) {
 		c.File("./web/index.html")
 	})
 	
 	// Handle Next.js static assets
 	router.Static("/_next", "./web/_next")
+	router.Static("/favicon.ico", "./web/favicon.ico")
 
 	// API v1 routes
 	v1 := router.Group("/v1")
 	{
-		// Construction API endpoints
-		construction := v1.Group("/construction")
+		// Coinbase API endpoints
+		coinbase := v1.Group("/coinbase")
 		{
-			construction.POST("/preprocess", handlers.Preprocess)
-			construction.POST("/payloads", handlers.Payloads)
-			construction.POST("/combine", handlers.Combine)
-			construction.POST("/submit", handlers.Submit)
-		}
-
-		// Account API endpoints
-		account := v1.Group("/account")
-		{
-			account.POST("/balance", handlers.GetBalance)
-		}
-
-		// Block API endpoints
-		block := v1.Group("/block")
-		{
-			block.POST("/", handlers.GetBlock)
-		}
-
-		// Transaction API endpoints
-		transaction := v1.Group("/transaction")
-		{
-			transaction.POST("/", handlers.GetTransaction)
+			// Wallet operations
+			coinbase.GET("/wallets", handlers.GetCoinbaseWallets)
+			coinbase.POST("/wallets", handlers.CreateCoinbaseWallet)
+			coinbase.GET("/wallets/:walletId/balance", handlers.GetCoinbaseWalletBalance)
+			
+			// Address operations
+			coinbase.GET("/wallets/:walletId/addresses", handlers.GetCoinbaseWalletAddresses)
+			coinbase.POST("/wallets/:walletId/addresses", handlers.CreateCoinbaseWalletAddress)
+			
+			// Transaction operations
+			coinbase.POST("/wallets/:walletId/transactions", handlers.CreateCoinbaseTransaction)
+			coinbase.GET("/wallets/:walletId/transactions", handlers.GetCoinbaseTransactions)
+			coinbase.POST("/wallets/:walletId/transactions/estimate-fee", handlers.EstimateCoinbaseTransactionFee)
+			coinbase.GET("/transactions/:transactionId", handlers.GetCoinbaseTransaction)
+			
+			// General information endpoints
+			coinbase.GET("/assets", handlers.GetCoinbaseAssets)
+			coinbase.GET("/networks", handlers.GetCoinbaseNetworks)
+			coinbase.GET("/exchange-rates", handlers.GetCoinbaseExchangeRates)
 		}
 
 		// Overledger API endpoints
 		overledger := v1.Group("/overledger")
 		{
-			// Network endpoints
+			// Network information
 			overledger.GET("/networks", handlers.GetOverledgerNetworks)
-
-			// Balance endpoints
-			overledger.GET("/balance/:networkId/:address", handlers.GetOverledgerBalance)
-
-			// Transaction endpoints
-			overledger.POST("/transaction", handlers.CreateOverledgerTransaction)
-
-			// Connection test endpoint
+			
+			// Account balance operations
+			overledger.GET("/networks/:networkId/addresses/:address/balance", handlers.GetOverledgerBalance)
+			
+			// Transaction operations
+			overledger.POST("/transactions", handlers.CreateOverledgerTransaction)
+			overledger.GET("/networks/:networkId/transactions/:txHash/status", handlers.GetOverledgerTransactionStatus)
+			
+			// Connection test
 			overledger.GET("/test", handlers.TestOverledgerConnection)
 		}
 	}
@@ -105,38 +99,34 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 // apiKeyMiddleware validates API key from X-API-Key header
 func apiKeyMiddleware(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Skip API key validation for health, status, root, web endpoints, and static assets
-		path := c.Request.URL.Path
-		if path == "/health" || path == "/status" || path == "/" || path == "/docs" ||
-			strings.HasPrefix(path, "/web/") ||
-			strings.HasPrefix(path, "/_next/") ||
-			strings.HasPrefix(path, "/favicon.ico") ||
-			strings.HasPrefix(path, "/vercel.svg") ||
-			strings.HasPrefix(path, "/next.svg") ||
-			strings.HasPrefix(path, "/globe.svg") ||
-			strings.HasPrefix(path, "/file.svg") ||
-			strings.HasPrefix(path, "/window.svg") {
+		// Skip API key check for health endpoints and static files
+		if isPublicPath(c.Request.URL.Path) {
+			c.Next()
+			return
+		}
+
+		// Skip API key check if not configured (development mode)
+		if cfg.APIKey == "" {
 			c.Next()
 			return
 		}
 
 		apiKey := c.GetHeader("X-API-Key")
 		if apiKey == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error":   "unauthorized",
-				"message": "API key is required",
-				"code":    http.StatusUnauthorized,
+			c.JSON(http.StatusUnauthorized, connector.ErrorResponse{
+				Error:   "missing_api_key",
+				Message: "API key is required. Please provide X-API-Key header.",
+				Code:    401,
 			})
 			c.Abort()
 			return
 		}
 
-		// Validate the API key
-		if cfg.APIKey != "" && apiKey != cfg.APIKey {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error":   "unauthorized",
-				"message": "Invalid API key",
-				"code":    http.StatusUnauthorized,
+		if apiKey != cfg.APIKey {
+			c.JSON(http.StatusUnauthorized, connector.ErrorResponse{
+				Error:   "invalid_api_key",
+				Message: "Invalid API key provided.",
+				Code:    401,
 			})
 			c.Abort()
 			return
@@ -144,4 +134,25 @@ func apiKeyMiddleware(cfg *config.Config) gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+// isPublicPath determines if a path should be accessible without API key
+func isPublicPath(path string) bool {
+	publicPaths := []string{
+		"/health",
+		"/status", 
+		"/",
+		"/web",
+		"/_next",
+		"/favicon.ico",
+		"/docs",
+	}
+
+	for _, publicPath := range publicPaths {
+		if path == publicPath || strings.HasPrefix(path, publicPath) {
+			return true
+		}
+	}
+
+	return false
 }

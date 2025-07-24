@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/rutishh0/testingquant/internal/connector"
@@ -24,18 +25,28 @@ func NewHandlers(connectorService connector.Service) *Handlers {
 
 // Health handles health check requests
 func (h *Handlers) Health(c *gin.Context) {
-	response := connector.HealthResponse{
-		Status:    "healthy",
-		Timestamp: time.Now().Unix(),
-		Version:   "1.0.0",
+	health, err := h.connectorService.HealthCheck()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
+			Error:   "health_check_failed",
+			Message: err.Error(),
+			Code:    500,
+		})
+		return
 	}
-	c.JSON(http.StatusOK, response)
+	
+	statusCode := http.StatusOK
+	if health.Status == "degraded" {
+		statusCode = http.StatusServiceUnavailable
+	}
+	
+	c.JSON(statusCode, health)
 }
 
-// Status handles status requests
+// Status handles status requests (legacy endpoint)
 func (h *Handlers) Status(c *gin.Context) {
 	response := connector.StatusResponse{
-		Service:   "quant-mesh-connector",
+		Service:   "quant-connector",
 		Status:    "running",
 		Uptime:    "N/A", // In a real implementation, calculate actual uptime
 		Timestamp: time.Now().Unix(),
@@ -43,9 +54,25 @@ func (h *Handlers) Status(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// Preprocess handles construction preprocess requests
-func (h *Handlers) Preprocess(c *gin.Context) {
-	var req connector.PreprocessRequest
+// Coinbase Handlers
+
+// GetCoinbaseWallets handles GET /v1/coinbase/wallets
+func (h *Handlers) GetCoinbaseWallets(c *gin.Context) {
+	wallets, err := h.connectorService.GetCoinbaseWallets()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
+			Error:   "coinbase_wallets_failed",
+			Message: err.Error(),
+			Code:    500,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, wallets)
+}
+
+// CreateCoinbaseWallet handles POST /v1/coinbase/wallets
+func (h *Handlers) CreateCoinbaseWallet(c *gin.Context) {
+	var req connector.CreateCoinbaseWalletRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
 			Error:   "invalid_request",
@@ -55,22 +82,55 @@ func (h *Handlers) Preprocess(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.connectorService.Preprocess(&req)
+	wallet, err := h.connectorService.CreateCoinbaseWallet(&req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
-			Error:   "preprocess_failed",
+			Error:   "coinbase_create_wallet_failed",
 			Message: err.Error(),
 			Code:    500,
 		})
 		return
 	}
-
-	c.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusCreated, wallet)
 }
 
-// Payloads handles construction payloads requests
-func (h *Handlers) Payloads(c *gin.Context) {
-	var req connector.PayloadsRequest
+// GetCoinbaseWalletBalance handles GET /v1/coinbase/wallets/:walletId/balance
+func (h *Handlers) GetCoinbaseWalletBalance(c *gin.Context) {
+	walletID := c.Param("walletId")
+	if walletID == "" {
+		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
+			Error:   "missing_wallet_id",
+			Message: "Wallet ID is required",
+			Code:    400,
+		})
+		return
+	}
+
+	balance, err := h.connectorService.GetCoinbaseWalletBalance(walletID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
+			Error:   "coinbase_balance_failed",
+			Message: err.Error(),
+			Code:    500,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, balance)
+}
+
+// CreateCoinbaseTransaction handles POST /v1/coinbase/wallets/:walletId/transactions
+func (h *Handlers) CreateCoinbaseTransaction(c *gin.Context) {
+	walletID := c.Param("walletId")
+	if walletID == "" {
+		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
+			Error:   "missing_wallet_id",
+			Message: "Wallet ID is required",
+			Code:    400,
+		})
+		return
+	}
+
+	var req connector.CreateCoinbaseTransactionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
 			Error:   "invalid_request",
@@ -80,22 +140,80 @@ func (h *Handlers) Payloads(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.connectorService.Payloads(&req)
+	req.WalletID = walletID
+	transaction, err := h.connectorService.CreateCoinbaseTransaction(&req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
-			Error:   "payloads_failed",
+			Error:   "coinbase_transaction_failed",
 			Message: err.Error(),
 			Code:    500,
 		})
 		return
 	}
-
-	c.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusCreated, transaction)
 }
 
-// Combine handles construction combine requests
-func (h *Handlers) Combine(c *gin.Context) {
-	var req connector.CombineRequest
+// GetCoinbaseTransaction handles GET /v1/coinbase/transactions/:transactionId
+func (h *Handlers) GetCoinbaseTransaction(c *gin.Context) {
+	transactionID := c.Param("transactionId")
+	if transactionID == "" {
+		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
+			Error:   "missing_transaction_id",
+			Message: "Transaction ID is required",
+			Code:    400,
+		})
+		return
+	}
+
+	transaction, err := h.connectorService.GetCoinbaseTransaction(transactionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
+			Error:   "coinbase_get_transaction_failed",
+			Message: err.Error(),
+			Code:    500,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, transaction)
+}
+
+// GetCoinbaseWalletAddresses handles GET /v1/coinbase/wallets/:walletId/addresses
+func (h *Handlers) GetCoinbaseWalletAddresses(c *gin.Context) {
+	walletID := c.Param("walletId")
+	if walletID == "" {
+		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
+			Error:   "missing_wallet_id",
+			Message: "Wallet ID is required",
+			Code:    400,
+		})
+		return
+	}
+
+	addresses, err := h.connectorService.GetCoinbaseWalletAddresses(walletID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
+			Error:   "coinbase_addresses_failed",
+			Message: err.Error(),
+			Code:    500,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, addresses)
+}
+
+// CreateCoinbaseWalletAddress handles POST /v1/coinbase/wallets/:walletId/addresses
+func (h *Handlers) CreateCoinbaseWalletAddress(c *gin.Context) {
+	walletID := c.Param("walletId")
+	if walletID == "" {
+		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
+			Error:   "missing_wallet_id",
+			Message: "Wallet ID is required",
+			Code:    400,
+		})
+		return
+	}
+
+	var req connector.CreateCoinbaseAddressRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
 			Error:   "invalid_request",
@@ -105,22 +223,110 @@ func (h *Handlers) Combine(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.connectorService.Combine(&req)
+	address, err := h.connectorService.CreateCoinbaseWalletAddress(walletID, &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
-			Error:   "combine_failed",
+			Error:   "coinbase_create_address_failed",
 			Message: err.Error(),
 			Code:    500,
 		})
 		return
 	}
-
-	c.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusCreated, address)
 }
 
-// Submit handles construction submit requests
-func (h *Handlers) Submit(c *gin.Context) {
-	var req connector.SubmitRequest
+// GetCoinbaseTransactions handles GET /v1/coinbase/wallets/:walletId/transactions
+func (h *Handlers) GetCoinbaseTransactions(c *gin.Context) {
+	walletID := c.Param("walletId")
+	if walletID == "" {
+		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
+			Error:   "missing_wallet_id",
+			Message: "Wallet ID is required",
+			Code:    400,
+		})
+		return
+	}
+
+	// Parse query parameters
+	limitStr := c.Query("limit")
+	cursor := c.Query("cursor")
+	
+	limit := 25 // default
+	if limitStr != "" {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
+	}
+
+	transactions, err := h.connectorService.GetCoinbaseTransactions(walletID, limit, cursor)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
+			Error:   "coinbase_transactions_failed",
+			Message: err.Error(),
+			Code:    500,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, transactions)
+}
+
+// GetCoinbaseAssets handles GET /v1/coinbase/assets
+func (h *Handlers) GetCoinbaseAssets(c *gin.Context) {
+	assets, err := h.connectorService.GetCoinbaseAssets()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
+			Error:   "coinbase_assets_failed",
+			Message: err.Error(),
+			Code:    500,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, assets)
+}
+
+// GetCoinbaseNetworks handles GET /v1/coinbase/networks
+func (h *Handlers) GetCoinbaseNetworks(c *gin.Context) {
+	networks, err := h.connectorService.GetCoinbaseNetworks()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
+			Error:   "coinbase_networks_failed",
+			Message: err.Error(),
+			Code:    500,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, networks)
+}
+
+// GetCoinbaseExchangeRates handles GET /v1/coinbase/exchange-rates
+func (h *Handlers) GetCoinbaseExchangeRates(c *gin.Context) {
+	baseCurrency := c.Query("currency")
+	
+	rates, err := h.connectorService.GetCoinbaseExchangeRates(baseCurrency)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
+			Error:   "coinbase_exchange_rates_failed",
+			Message: err.Error(),
+			Code:    500,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, rates)
+}
+
+// EstimateCoinbaseTransactionFee handles POST /v1/coinbase/wallets/:walletId/transactions/estimate-fee
+func (h *Handlers) EstimateCoinbaseTransactionFee(c *gin.Context) {
+	walletID := c.Param("walletId")
+	if walletID == "" {
+		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
+			Error:   "missing_wallet_id",
+			Message: "Wallet ID is required",
+			Code:    400,
+		})
+		return
+	}
+
+	var req connector.EstimateFeeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
 			Error:   "invalid_request",
@@ -130,99 +336,23 @@ func (h *Handlers) Submit(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.connectorService.Submit(&req)
+	feeEstimate, err := h.connectorService.EstimateCoinbaseTransactionFee(walletID, &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
-			Error:   "submit_failed",
+			Error:   "coinbase_fee_estimate_failed",
 			Message: err.Error(),
 			Code:    500,
 		})
 		return
 	}
-
-	c.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusOK, feeEstimate)
 }
 
-// GetBalance handles balance requests
-func (h *Handlers) GetBalance(c *gin.Context) {
-	var req connector.BalanceRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
-			Error:   "invalid_request",
-			Message: err.Error(),
-			Code:    400,
-		})
-		return
-	}
+// Overledger Handlers
 
-	resp, err := h.connectorService.GetBalance(&req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
-			Error:   "balance_failed",
-			Message: err.Error(),
-			Code:    500,
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, resp)
-}
-
-// GetBlock handles block requests
-func (h *Handlers) GetBlock(c *gin.Context) {
-	var req connector.BlockRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
-			Error:   "invalid_request",
-			Message: err.Error(),
-			Code:    400,
-		})
-		return
-	}
-
-	resp, err := h.connectorService.GetBlock(&req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
-			Error:   "block_failed",
-			Message: err.Error(),
-			Code:    500,
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, resp)
-}
-
-// GetTransaction handles transaction requests
-func (h *Handlers) GetTransaction(c *gin.Context) {
-	var req connector.TransactionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
-			Error:   "invalid_request",
-			Message: err.Error(),
-			Code:    400,
-		})
-		return
-	}
-
-	resp, err := h.connectorService.GetTransaction(&req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
-			Error:   "transaction_failed",
-			Message: err.Error(),
-			Code:    500,
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, resp)
-}
-
-// Overledger-specific handlers
-
-// GetOverledgerNetworks handles Overledger networks requests
+// GetOverledgerNetworks handles GET /v1/overledger/networks
 func (h *Handlers) GetOverledgerNetworks(c *gin.Context) {
-	resp, err := h.connectorService.GetOverledgerNetworks()
+	networks, err := h.connectorService.GetOverledgerNetworks()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
 			Error:   "overledger_networks_failed",
@@ -231,25 +361,24 @@ func (h *Handlers) GetOverledgerNetworks(c *gin.Context) {
 		})
 		return
 	}
-
-	c.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusOK, networks)
 }
 
-// GetOverledgerBalance handles Overledger balance requests
+// GetOverledgerBalance handles GET /v1/overledger/networks/:networkId/addresses/:address/balance
 func (h *Handlers) GetOverledgerBalance(c *gin.Context) {
 	networkID := c.Param("networkId")
 	address := c.Param("address")
-
+	
 	if networkID == "" || address == "" {
 		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
-			Error:   "invalid_request",
-			Message: "networkId and address are required",
+			Error:   "missing_parameters",
+			Message: "Network ID and address are required",
 			Code:    400,
 		})
 		return
 	}
 
-	resp, err := h.connectorService.GetOverledgerBalance(networkID, address)
+	balance, err := h.connectorService.GetOverledgerBalance(networkID, address)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
 			Error:   "overledger_balance_failed",
@@ -258,21 +387,12 @@ func (h *Handlers) GetOverledgerBalance(c *gin.Context) {
 		})
 		return
 	}
-
-	c.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusOK, balance)
 }
 
-// CreateOverledgerTransaction handles Overledger transaction creation
+// CreateOverledgerTransaction handles POST /v1/overledger/transactions
 func (h *Handlers) CreateOverledgerTransaction(c *gin.Context) {
-	var req struct {
-		NetworkID   string                 `json:"networkId" binding:"required"`
-		FromAddress string                 `json:"fromAddress" binding:"required"`
-		ToAddress   string                 `json:"toAddress" binding:"required"`
-		Amount      string                 `json:"amount" binding:"required"`
-		TokenSymbol string                 `json:"tokenSymbol,omitempty"`
-		Metadata    map[string]interface{} `json:"metadata,omitempty"`
-	}
-
+	var req overledger.TransactionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
 			Error:   "invalid_request",
@@ -282,17 +402,7 @@ func (h *Handlers) CreateOverledgerTransaction(c *gin.Context) {
 		return
 	}
 
-	// Map to Overledger transaction request
-	txReq := &overledger.TransactionRequest{
-		NetworkID:   req.NetworkID,
-		FromAddress: req.FromAddress,
-		ToAddress:   req.ToAddress,
-		Amount:      req.Amount,
-		TokenID:     req.TokenSymbol,
-		Metadata:    req.Metadata,
-	}
-
-	resp, err := h.connectorService.CreateOverledgerTransaction(txReq)
+	transaction, err := h.connectorService.CreateOverledgerTransaction(&req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
 			Error:   "overledger_transaction_failed",
@@ -301,11 +411,36 @@ func (h *Handlers) CreateOverledgerTransaction(c *gin.Context) {
 		})
 		return
 	}
-
-	c.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusCreated, transaction)
 }
 
-// TestOverledgerConnection handles Overledger connection test
+// GetOverledgerTransactionStatus handles GET /v1/overledger/networks/:networkId/transactions/:txHash/status
+func (h *Handlers) GetOverledgerTransactionStatus(c *gin.Context) {
+	networkID := c.Param("networkId")
+	txHash := c.Param("txHash")
+	
+	if networkID == "" || txHash == "" {
+		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
+			Error:   "missing_parameters",
+			Message: "Network ID and transaction hash are required",
+			Code:    400,
+		})
+		return
+	}
+
+	status, err := h.connectorService.GetOverledgerTransactionStatus(networkID, txHash)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
+			Error:   "overledger_transaction_status_failed",
+			Message: err.Error(),
+			Code:    500,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, status)
+}
+
+// TestOverledgerConnection handles GET /v1/overledger/test
 func (h *Handlers) TestOverledgerConnection(c *gin.Context) {
 	err := h.connectorService.TestOverledgerConnection()
 	if err != nil {
