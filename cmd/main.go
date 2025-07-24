@@ -2,7 +2,6 @@ package main
 
 import (
     "log"
-    "os"
 
     "github.com/rutishh0/testingquant/internal/api"
     "github.com/rutishh0/testingquant/internal/clients"
