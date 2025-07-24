@@ -1,50 +1,59 @@
-# Build stage
-FROM golang:1.21-alpine AS builder
+# Stage 1: Build the frontend
+FROM node:18-alpine AS frontend-builder
 
-# Set working directory
+WORKDIR /app/web
+
+# Copy package files and install dependencies
+COPY web/package.json web/package-lock.json ./
+RUN npm install
+
+# Copy the rest of the frontend source code
+COPY web/ . 
+
+# Build the static frontend
+RUN npm run build
+
+# Stage 2: Build the Go backend
+FROM golang:1.21-alpine AS go-builder
+
 WORKDIR /app
 
-# Install git (required for some Go modules)
+# Install git for Go modules
 RUN apk add --no-cache git
 
-# Copy go mod files
+# Copy Go module files and download dependencies
 COPY go.mod go.sum ./
-
-# Download dependencies
 RUN go mod download
 
-# Copy source code
+# Copy the rest of the source code
 COPY . .
 
-# Build the application
+# Build the Go application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main cmd/main.go
 
-# Final stage
+# Stage 3: Create the final image
 FROM alpine:latest
 
 # Install ca-certificates for HTTPS requests
 RUN apk --no-cache add ca-certificates
 
-# Create app directory
 WORKDIR /root/
 
-# Copy binary from builder stage
-COPY --from=builder /app/main .
+# Copy the Go binary from the go-builder stage
+COPY --from=go-builder /app/main .
 
-# Copy web directory for static files
-COPY --from=builder /app/web ./testingquant
+# Copy the built frontend from the frontend-builder stage
+# The output of 'next export' is in the 'out' directory
+COPY --from=frontend-builder /app/web/out ./web
 
 # Copy connector configuration
-COPY --from=builder /app/connectors.yaml .
-
-
-
+COPY --from=go-builder /app/connectors.yaml .
 
 # Set environment variables for production
 ENV GIN_MODE=release
 ENV ENVIRONMENT=production
 
-# Expose port (Railway will set PORT env var)
+# Expose the port the app runs on
 EXPOSE 8080
 
 # Run the application
