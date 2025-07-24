@@ -2,9 +2,7 @@ package utils
 
 import (
 	"crypto/ed25519"
-	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"

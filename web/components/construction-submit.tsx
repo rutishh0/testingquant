@@ -6,12 +6,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiClient } from './api-client';
 
+// Define interfaces for the API request and response
+interface SubmitRequest {
+  network_identifier: {
+    blockchain: string;
+    network: string;
+  };
+  signed_transaction: string;
+}
+
+interface SubmitResponse {
+  transaction_identifier: {
+    hash: string;
+  };
+  metadata: object;
+}
+
 export default function Submit() {
   const [requestBody, setRequestBody] = useState(JSON.stringify({
     network_identifier: { blockchain: "ethereum", network: "goerli" },
     signed_transaction: ""
   }, null, 2));
-  const [response, setResponse] = useState(null);
+  const [response, setResponse] = useState<SubmitResponse | null>(null);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -19,10 +35,14 @@ export default function Submit() {
     setError('');
     setResponse(null);
     try {
-      const result = await apiClient.post('/construction/submit', JSON.parse(requestBody));
+      const result = await apiClient.post<SubmitRequest, SubmitResponse>('/construction/submit', JSON.parse(requestBody));
       setResponse(result);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred');
+      }
     }
   };
 

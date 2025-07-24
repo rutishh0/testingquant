@@ -6,13 +6,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiClient } from './api-client';
 
+// Define interfaces for the API request and response
+interface CombineRequest {
+  network_identifier: {
+    blockchain: string;
+    network: string;
+  };
+  unsigned_transaction: string;
+  signatures: any[]; // Keeping signatures as any[] for flexibility
+}
+
+interface CombineResponse {
+  signed_transaction: string;
+}
+
 export default function Combine() {
   const [requestBody, setRequestBody] = useState(JSON.stringify({
     network_identifier: { blockchain: "ethereum", network: "goerli" },
     unsigned_transaction: "",
     signatures: []
   }, null, 2));
-  const [response, setResponse] = useState(null);
+  const [response, setResponse] = useState<CombineResponse | null>(null);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,10 +34,14 @@ export default function Combine() {
     setError('');
     setResponse(null);
     try {
-      const result = await apiClient.post('/construction/combine', JSON.parse(requestBody));
+      const result = await apiClient.post<CombineRequest, CombineResponse>('/construction/combine', JSON.parse(requestBody));
       setResponse(result);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred');
+      }
     }
   };
 

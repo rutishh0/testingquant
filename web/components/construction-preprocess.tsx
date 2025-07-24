@@ -2,17 +2,30 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiClient } from './api-client';
+
+// Define interfaces for the API request and response
+interface PreprocessRequest {
+  network_identifier: {
+    blockchain: string;
+    network: string;
+  };
+  operations: any[];
+}
+
+interface PreprocessResponse {
+  options?: { [key: string]: any };
+  required_public_keys?: string[];
+}
 
 export default function Preprocess() {
   const [requestBody, setRequestBody] = useState(JSON.stringify({
     network_identifier: { blockchain: "ethereum", network: "goerli" },
     operations: []
   }, null, 2));
-  const [response, setResponse] = useState(null);
+  const [response, setResponse] = useState<PreprocessResponse | null>(null);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,10 +33,14 @@ export default function Preprocess() {
     setError('');
     setResponse(null);
     try {
-      const result = await apiClient.post('/construction/preprocess', JSON.parse(requestBody));
+      const result = await apiClient.post<PreprocessRequest, PreprocessResponse>('/construction/preprocess', JSON.parse(requestBody));
       setResponse(result);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred');
+      }
     }
   };
 

@@ -1,10 +1,12 @@
 package adapters_test
 
 import (
-    "testing"
-    "path/filepath"
+	"path/filepath"
+	"testing"
 
-    core "github.com/rutishh0/testingquant/internal/core"
+	_ "github.com/rutishh0/testingquant/internal/adapters/mesh"
+	_ "github.com/rutishh0/testingquant/internal/adapters/overledger"
+	core "github.com/rutishh0/testingquant/internal/core"
 )
 
 // TestConnectorIDsUnique ensures each adapter registers with a non-empty, unique ID.

@@ -6,13 +6,34 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiClient } from './api-client';
 
+// Define interfaces for the API request and response
+interface PayloadsRequest {
+  network_identifier: {
+    blockchain: string;
+    network: string;
+  };
+  operations: any[];
+  metadata?: object;
+}
+
+interface SigningPayload {
+  address_data: string;
+  hex_bytes: string;
+  signature_type: string;
+}
+
+interface PayloadsResponse {
+  unsigned_transaction: string;
+  payloads: SigningPayload[];
+}
+
 export default function Payloads() {
   const [requestBody, setRequestBody] = useState(JSON.stringify({
     network_identifier: { blockchain: "ethereum", network: "goerli" },
     operations: [],
     metadata: {}
   }, null, 2));
-  const [response, setResponse] = useState(null);
+  const [response, setResponse] = useState<PayloadsResponse | null>(null);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,10 +41,14 @@ export default function Payloads() {
     setError('');
     setResponse(null);
     try {
-      const result = await apiClient.post('/construction/payloads', JSON.parse(requestBody));
+      const result = await apiClient.post<PayloadsRequest, PayloadsResponse>('/construction/payloads', JSON.parse(requestBody));
       setResponse(result);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred');
+      }
     }
   };
 

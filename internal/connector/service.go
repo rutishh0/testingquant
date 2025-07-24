@@ -23,14 +23,32 @@ type Service interface {
 	TestOverledgerConnection() error
 }
 
+// MeshClient defines the interface for the Mesh client.
+type MeshClient interface {
+	ConstructionPreprocess(req *mesh.ConstructionPreprocessRequest) (*mesh.ConstructionPreprocessResponse, error)
+	ConstructionPayloads(req *mesh.ConstructionPayloadsRequest) (*mesh.ConstructionPayloadsResponse, error)
+	ConstructionCombine(req *mesh.ConstructionCombineRequest) (*mesh.ConstructionCombineResponse, error)
+	ConstructionSubmit(req *mesh.ConstructionSubmitRequest) (*mesh.ConstructionSubmitResponse, error)
+	AccountBalance(req *mesh.AccountBalanceRequest) (*mesh.AccountBalanceResponse, error)
+	Block(req *mesh.BlockRequest) (*mesh.BlockResponse, error)
+}
+
+// OverledgerClient defines the interface for the Overledger client.
+type OverledgerClient interface {
+	GetNetworks() (*overledger.NetworksResponse, error)
+	GetAccountBalance(networkID, address string) (*overledger.BalanceResponse, error)
+	CreateTransaction(req *overledger.TransactionRequest) (*overledger.TransactionResponse, error)
+	TestConnection() error
+}
+
 // service implements the Service interface
 type service struct {
-	meshClient       *mesh.Client
-	overledgerClient *overledger.Client
+	meshClient       MeshClient
+	overledgerClient OverledgerClient
 }
 
 // NewService creates a new connector service
-func NewService(meshClient *mesh.Client, overledgerClient *overledger.Client) Service {
+func NewService(meshClient MeshClient, overledgerClient OverledgerClient) Service {
 	return &service{
 		meshClient:       meshClient,
 		overledgerClient: overledgerClient,
@@ -63,7 +81,7 @@ func (s *service) Preprocess(req *PreprocessRequest) (*PreprocessResponse, error
 	return &PreprocessResponse{
 		Options:            meshResp.Options,
 		RequiredSigners:    mapRequiredSigners(meshResp.RequiredPublicKeys),
-		TransactionFee:     calculateTransactionFee(meshResp),
+		TransactionFee:     calculateTransactionFee(),
 		GatewayFee:         "0",
 		PreparedTransaction: generatePreparedTransaction(meshResp),
 	}, nil
@@ -348,7 +366,7 @@ func mapRequiredSigners(accounts []mesh.AccountIdentifier) []string {
 	return signers
 }
 
-func calculateTransactionFee(resp *mesh.ConstructionPreprocessResponse) string {
+func calculateTransactionFee() string {
 	// In a real implementation, this would calculate the fee based on the response
 	// For simplicity in this PoC, we'll return a fixed fee
 	return "0.001"
@@ -455,16 +473,4 @@ func (s *service) CreateOverledgerTransaction(req *overledger.TransactionRequest
 // TestOverledgerConnection tests the connection to Overledger API
 func (s *service) TestOverledgerConnection() error {
 	return s.overledgerClient.TestConnection()
-}
-
-func mapMeshOperations(ops []mesh.Operation) []mesh.Operation {
-	return ops
-}
-
-func mapAccount(acc *mesh.AccountIdentifier) *mesh.AccountIdentifier {
-	return acc
-}
-
-func mapAmount(amt *mesh.Amount) *mesh.Amount {
-	return amt
 }

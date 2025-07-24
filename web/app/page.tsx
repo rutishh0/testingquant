@@ -1,5 +1,5 @@
 import {
-  Card,  CardContent,  CardDescription,  CardFooter,  CardHeader,  CardTitle,} from "@/components/ui/card";
+  Card,  CardContent,  CardDescription,  CardHeader,  CardTitle,} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Preprocess from "@/components/construction-preprocess";
 import Payloads from "@/components/construction-payloads";
