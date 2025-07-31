@@ -33,7 +33,7 @@ func LoadConfig() *Config {
 	
 	return &Config{
 		ServerAddress: getEnv("SERVER_ADDRESS", port),
-		APIKey:        getEnv("API_KEY", ""),
+		APIKey:        getEnv("API_KEY", "dev-api-key"),
 		Environment:   getEnv("ENVIRONMENT", "development"),
 		LogLevel:      getEnv("LOG_LEVEL", "info"),
 		
