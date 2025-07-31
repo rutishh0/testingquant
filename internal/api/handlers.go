@@ -9,6 +9,7 @@ import (
 	"github.com/rutishh0/testingquant/internal/connector"
 	"github.com/rutishh0/testingquant/internal/overledger"
 	"github.com/rutishh0/testingquant/internal/tests"
+	"github.com/rutishh0/testingquant/internal/clients"
 
 	"github.com/gin-gonic/gin"
 )
@@ -356,6 +357,54 @@ func (h *Handlers) EstimateCoinbaseTransactionFee(c *gin.Context) {
 func (h *Handlers) RunTests(c *gin.Context) {
 	results := tests.RunAll(h.connectorService, h.cfg)
 	c.JSON(http.StatusOK, results)
+}
+
+// Exchange Handlers
+
+// GetExchangeProducts handles GET /v1/exchange/products
+func (h *Handlers) GetExchangeProducts(c *gin.Context) {
+    exch, err := clients.NewExchangeClient()
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
+            Error:   "exchange_client_init_failed",
+            Message: err.Error(),
+            Code:    500,
+        })
+        return
+    }
+    products, err := exch.ListProducts(c.Request.Context())
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
+            Error:   "exchange_products_failed",
+            Message: err.Error(),
+            Code:    500,
+        })
+        return
+    }
+    c.JSON(http.StatusOK, products)
+}
+
+// GetExchangeAccounts handles GET /v1/exchange/accounts
+func (h *Handlers) GetExchangeAccounts(c *gin.Context) {
+    exch, err := clients.NewExchangeClient()
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
+            Error:   "exchange_client_init_failed",
+            Message: err.Error(),
+            Code:    500,
+        })
+        return
+    }
+    accountsResp, err := exch.ListAccounts(c.Request.Context())
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
+            Error:   "exchange_accounts_failed",
+            Message: err.Error(),
+            Code:    500,
+        })
+        return
+    }
+    c.JSON(http.StatusOK, accountsResp)
 }
 
 // Overledger Handlers

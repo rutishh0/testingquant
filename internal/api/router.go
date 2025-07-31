@@ -77,6 +77,13 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 			coinbase.GET("/exchange-rates", handlers.GetCoinbaseExchangeRates)
 		}
 
+		// Exchange API endpoints
+		exchange := v1.Group("/exchange")
+		{
+			exchange.GET("/products", handlers.GetExchangeProducts)
+			exchange.GET("/accounts", handlers.GetExchangeAccounts)
+		}
+
 		// Overledger API endpoints
 		overledger := v1.Group("/overledger")
 		{
