@@ -43,9 +43,9 @@ func main() {
 		
 		// Test Overledger connection
 		if err := overledgerClient.TestConnection(); err != nil {
-			log.Printf("Warning: Overledger connection test failed: %v", err)
+			log.Fatalf("❌ Critical: Overledger connection test failed, cannot start service: %v", err)
 		} else {
-			log.Printf("Overledger connection successful")
+			log.Printf("✅ Overledger connection successful")
 		}
 	} else {
 		log.Println("Overledger credentials not configured, Overledger functionality disabled")

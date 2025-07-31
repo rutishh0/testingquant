@@ -10,12 +10,12 @@ type Config struct {
 	APIKey        string
 	Environment   string
 	LogLevel      string
-	
+
 	// Coinbase API Configuration
 	CoinbaseAPIKeyID  string
 	CoinbaseAPISecret string
 	CoinbaseAPIURL    string
-	
+
 	// Overledger OAuth2 Configuration
 	OverledgerClientID     string
 	OverledgerClientSecret string
@@ -30,21 +30,21 @@ func LoadConfig() *Config {
 	if port[0] != ':' {
 		port = ":" + port
 	}
-	
+
 	return &Config{
 		ServerAddress: getEnv("SERVER_ADDRESS", port),
-		APIKey:        getEnv("API_KEY", "dev-api-key"),
+		APIKey:        getEnv("API_KEY", "development-api-key-12345678901234567890"),
 		Environment:   getEnv("ENVIRONMENT", "development"),
 		LogLevel:      getEnv("LOG_LEVEL", "info"),
-		
+
 		// Coinbase API Configuration
-		CoinbaseAPIKeyID:  getEnv("COINBASE_API_KEY_ID", ""),
-		CoinbaseAPISecret: getEnv("COINBASE_API_SECRET", ""),
+		CoinbaseAPIKeyID:  getEnv("COINBASE_API_KEY_ID", "64b6c1ef-d093-42e7-b811-4cc19a342696"),
+		CoinbaseAPISecret: getEnv("COINBASE_API_SECRET", "32IrsqS1B8PcoN+iy+P/i3mNlZzXFPY66zLtJV/xsDQ+WphMqeOTTUSlb05FbaM9itHkZAjIzR3dPjgyl3ZiCg=="),
 		CoinbaseAPIURL:    getEnv("COINBASE_API_URL", "https://api.cdp.coinbase.com"),
-		
+
 		// Overledger OAuth2 Configuration
-		OverledgerClientID:     getEnv("OVERLEDGER_CLIENT_ID", ""),
-		OverledgerClientSecret: getEnv("OVERLEDGER_CLIENT_SECRET", ""),
+		OverledgerClientID:     getEnv("OVERLEDGER_CLIENT_ID", "3nhqpst935v0kqumc3s76jcq46"),
+		OverledgerClientSecret: getEnv("OVERLEDGER_CLIENT_SECRET", "102l0eabrqum4pald0mv7l0o6e25i73utvn9htdv0rjjkusrblje"),
 		OverledgerAuthURL:      getEnv("OVERLEDGER_AUTH_URL", "https://auth.overledger.dev/oauth2/token"),
 		OverledgerBaseURL:      getEnv("OVERLEDGER_BASE_URL", "https://api.overledger.dev"),
 	}
@@ -73,7 +73,7 @@ func (c *Config) HasCoinbaseCredentials() bool {
 	return c.CoinbaseAPIKeyID != "" && c.CoinbaseAPISecret != ""
 }
 
-// HasOverledgerCredentials returns true if Overledger API credentials are configured  
+// HasOverledgerCredentials returns true if Overledger API credentials are configured
 func (c *Config) HasOverledgerCredentials() bool {
 	return c.OverledgerClientID != "" && c.OverledgerClientSecret != ""
 }
