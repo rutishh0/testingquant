@@ -3,6 +3,7 @@ module github.com/rutishh0/testingquant
 go 1.21
 
 require (
+	github.com/coinbase-samples/exchange-sdk-go v0.1.4
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang-jwt/jwt/v5 v5.2.3

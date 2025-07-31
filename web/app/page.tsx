@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import CoinbaseWallets from "@/components/coinbase-wallets";
 import CoinbaseAssets from "@/components/coinbase-assets";
+import ExchangeMarketData from "@/components/exchange-market-data";
 import OverledgerNetworks from "@/components/overledger-networks";
 import OverledgerTransactions from "@/components/overledger-transactions";
 import SystemHealth from "@/components/system-health";
@@ -162,6 +163,23 @@ export default function Home() {
             </CardHeader>
             <CardContent>
                 <CoinbaseAssets />
+                </CardContent>
+              </Card>
+
+              {/* Live Market Data */}
+              <Card className="border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                    <span>Live Market Data</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Real-time ticker from Coinbase Exchange
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ExchangeMarketData />
+
             </CardContent>
           </Card>
           </div>

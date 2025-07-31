@@ -194,6 +194,11 @@ const overledger = {
   testConnection: () => apiCall('/v1/overledger/test'),
 };
 
+// Exchange API methods
+const exchange = {
+  listProducts: () => apiCall('/v1/exchange/products'),
+};
+
 // Test runner API
 const tests = {
   getResults: () => apiCall<TestResult[]>('/tests'),
@@ -201,6 +206,7 @@ const tests = {
 
 export const apiClient = {
   health,
+  exchange,
   coinbase,
   overledger,
   tests,
