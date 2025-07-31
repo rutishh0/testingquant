@@ -7,7 +7,7 @@ import (
 
     "github.com/coinbase-samples/exchange-sdk-go/accounts"
     exchclient "github.com/coinbase-samples/exchange-sdk-go/client"
-    "github.com/coinbase-samples/exchange-sdk-go/core"
+    "github.com/coinbase-samples/core-go"
     "github.com/coinbase-samples/exchange-sdk-go/credentials"
     "github.com/coinbase-samples/exchange-sdk-go/products"
 )
