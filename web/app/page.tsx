@@ -14,6 +14,7 @@ import {
   Activity,
   ExternalLink,
   Shield,
+  ShieldCheck,
   Zap
 } from "lucide-react";
 import CoinbaseWallets from "@/components/coinbase-wallets";
@@ -21,6 +22,7 @@ import CoinbaseAssets from "@/components/coinbase-assets";
 import OverledgerNetworks from "@/components/overledger-networks";
 import OverledgerTransactions from "@/components/overledger-transactions";
 import SystemHealth from "@/components/system-health";
+import TestingLogs from "@/components/testing-logs";
 
 export default function Home() {
   return (
@@ -60,7 +62,7 @@ export default function Home() {
 
         {/* Main Tabs */}
         <Tabs defaultValue="coinbase" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 h-12">
+          <TabsList className="grid w-full grid-cols-5 h-12">
             <TabsTrigger value="coinbase" className="flex items-center space-x-2">
               <Wallet className="w-4 h-4" />
               <span>Coinbase</span>
@@ -72,6 +74,10 @@ export default function Home() {
             <TabsTrigger value="trading" className="flex items-center space-x-2">
               <TrendingUp className="w-4 h-4" />
               <span>Trading</span>
+            </TabsTrigger>
+            <TabsTrigger value="testing" className="flex items-center space-x-2">
+              <ShieldCheck className="w-4 h-4" />
+              <span>Testing</span>
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center space-x-2">
               <Activity className="w-4 h-4" />
@@ -147,6 +153,24 @@ export default function Home() {
               </CardContent>
             </Card>
             </div>
+          </TabsContent>
+
+          {/* Testing Logs Tab */}
+          <TabsContent value="testing" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <ShieldCheck className="w-5 h-5" />
+                  <span>Testing Logs</span>
+                </CardTitle>
+                <CardDescription>
+                  Automated backend test results (refreshes every 30s)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TestingLogs />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Trading Tab */}

@@ -45,12 +45,15 @@ WORKDIR /root/
 # Copy the Go binary from the go-builder stage
 COPY --from=go-builder /app/main .
 
+# Copy .env file for fallback local configuration (optional; environment variables in Koyeb override)
+COPY --from=go-builder /app/.env .
+
 # Copy the built frontend from the frontend-builder stage
 # The output of 'next export' is in the 'out' directory
 COPY --from=frontend-builder /app/web/out ./web
 
 # Copy documentation
-#COPY --from=go-builder /app/docs ./docs
+COPY --from=go-builder /app/docs ./docs
 
 # Set environment variables for production
 ENV GIN_MODE=release

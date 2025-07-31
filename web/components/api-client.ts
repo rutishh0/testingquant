@@ -55,6 +55,23 @@ export interface CoinbaseExchangeRatesResponse {
   };
 }
 
+// Automated test runner result type (mirrors backend)
+export interface TestResult {
+  tier: number;
+  name: string;
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+export interface CoinbaseExchangeRatesResponse {
+  data: {
+    currency: string;
+    rates: Record<string, string>;
+    updated_at: string;
+  };
+}
+
 // Utility function for API calls
 async function apiCall<T>(
   endpoint: string,
@@ -175,8 +192,14 @@ const overledger = {
   testConnection: () => apiCall('/v1/overledger/test'),
 };
 
+// Test runner API
+const tests = {
+  getResults: () => apiCall<TestResult[]>('/tests'),
+};
+
 export const apiClient = {
   health,
   coinbase,
   overledger,
+  tests,
 };
