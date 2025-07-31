@@ -5,8 +5,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/rutishh0/testingquant/internal/config"
 	"github.com/rutishh0/testingquant/internal/connector"
 	"github.com/rutishh0/testingquant/internal/overledger"
+	"github.com/rutishh0/testingquant/internal/tests"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,12 +16,14 @@ import (
 // Handlers contains all HTTP handlers
 type Handlers struct {
 	connectorService connector.Service
+	cfg              *config.Config
 }
 
 // NewHandlers creates a new handlers instance
-func NewHandlers(connectorService connector.Service) *Handlers {
+func NewHandlers(connectorService connector.Service, cfg *config.Config) *Handlers {
 	return &Handlers{
 		connectorService: connectorService,
+		cfg:              cfg,
 	}
 }
 
@@ -346,6 +350,12 @@ func (h *Handlers) EstimateCoinbaseTransactionFee(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, feeEstimate)
+}
+
+// RunTests handles GET /tests and returns automated test results
+func (h *Handlers) RunTests(c *gin.Context) {
+	results := tests.RunAll(h.connectorService, h.cfg)
+	c.JSON(http.StatusOK, results)
 }
 
 // Overledger Handlers

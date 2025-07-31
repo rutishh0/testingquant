@@ -2,6 +2,7 @@ package main
 
 import (
     "log"
+    "os"
 
     "github.com/rutishh0/testingquant/internal/api"
     "github.com/rutishh0/testingquant/internal/clients"
@@ -14,9 +15,11 @@ import (
 )
 
 func main() {
-	// Load environment variables
+	// Load environment variables from .env if present (development use)
 	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using system environment variables")
+		if !os.IsNotExist(err) {
+			log.Printf("⚠️  Error loading .env: %v", err)
+		}
 	}
 
 	// Load configuration

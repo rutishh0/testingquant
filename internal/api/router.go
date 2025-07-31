@@ -1,7 +1,7 @@
 package api
 
 import (
-	"net/http"
+    "net/http"
 	"strings"
 	"time"
 
@@ -30,11 +30,13 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 	router.Use(apiKeyMiddleware(cfg))
 
 	// Initialize handlers
-	handlers := NewHandlers(connectorService)
+	handlers := NewHandlers(connectorService, cfg)
 
 	// Health and status endpoints
 	router.GET("/health", handlers.Health)
 	router.GET("/status", handlers.Status)
+    // Automated tests endpoint
+    router.GET("/tests", handlers.RunTests)
 	
 	// Serve Next.js web application
 	router.Static("/web", "./web")
@@ -146,6 +148,7 @@ func isPublicPath(path string) bool {
 		"/_next",
 		"/favicon.ico",
 		"/docs",
+        "/tests",
 	}
 
 	for _, publicPath := range publicPaths {
