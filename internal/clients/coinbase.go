@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/rutishh0/testingquant/internal/utils"
 )
+
+const coinbaseAPIPrefix = "/platform"
 
 type CoinbaseClient struct {
 	BaseURL string
@@ -39,6 +42,11 @@ func NewCoinbaseClient() *CoinbaseClient {
 
 // DoRequest makes an authenticated request to the Coinbase API
 func (c *CoinbaseClient) DoRequest(method, path string, body interface{}) (*http.Response, error) {
+	// ensure prefix
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	fullPath := coinbaseAPIPrefix + path
 	var reqBody io.Reader = nil
 	
 	// Marshal request body if provided
@@ -51,13 +59,13 @@ func (c *CoinbaseClient) DoRequest(method, path string, body interface{}) (*http
 	}
 
 	// Create the request
-	req, err := http.NewRequest(method, c.BaseURL+path, reqBody)
+	req, err := http.NewRequest(method, c.BaseURL+fullPath, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
 
-	// Generate auth headers
-	headers, err := utils.GenerateAuthHeaders(method, path)
+	// Generate auth headers (must include the same path the request will use)
+	headers, err := utils.GenerateAuthHeaders(method, fullPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate auth headers: %v", err)
 	}
