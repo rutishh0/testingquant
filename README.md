@@ -1,4 +1,140 @@
-# Quant-to-Coinbase Mesh Connector
+# Quant Connector
+
+_Unified Coinbase CDP × Quant Overledger bridge – Go backend · Next.js dashboard · Docker-ready for Koyeb_
+
+---
+
+Quant Connector exposes a single REST API plus a React dashboard that lets you:
+
+* Create & manage Coinbase wallets/addresses
+* Retrieve balances, assets and exchange-rates
+* Relay signed transactions to multiple chains via Overledger
+* View live system-health – all secured by an `X-API-Key` header
+
+---
+
+## Tech Stack
+
+| Layer      | Technology                                                   |
+|------------|--------------------------------------------------------------|
+| Backend    | **Go 1.21**, Gin, CORS, OAuth2 (Overledger), Ed25519 JWT (CDP) |
+| Frontend   | **Next.js 14** (app router), Tailwind CSS, Radix UI           |
+| Container  | Multi-stage Docker (Node → Go → Alpine)                      |
+| Hosting    | Koyeb (Docker image, zero-dyno scaling)                      |
+
+---
+
+## Quick Start (local)
+
+```bash
+# clone & install deps
+git clone https://github.com/<your-org>/quant-connector.git
+cd quant-connector
+go mod download
+npm --prefix web ci
+
+# copy env template and fill in credentials
+cp .env.example .env
+
+# run backend (http://localhost:8080)
+go run cmd/main.go &
+
+# run frontend (http://localhost:3000)
+npm --prefix web run dev
+```
+
+Visit `http://localhost:3000` – the dashboard proxies API calls to `localhost:8080`.
+
+---
+
+## Environment Variables
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `API_KEY` | Shared key required in `X-API-Key` | `dev-key-123` |
+| `SERVER_ADDRESS` | Gin bind address | `:8080` |
+| **Coinbase CDP** |||
+| `COINBASE_API_KEY_ID` | Ed25519 key ID | `7ac8…` |
+| `COINBASE_API_SECRET` | Base-64 seed | `mYB1…` |
+| `COINBASE_API_URL` | CDP base URL | `https://api.cdp.coinbase.com` |
+| **Overledger** |||
+| `OVERLEDGER_CLIENT_ID` | OAuth2 client | `abc…` |
+| `OVERLEDGER_CLIENT_SECRET` | OAuth2 secret | `xyz…` |
+| `OVERLEDGER_AUTH_URL` | Token endpoint | `https://auth.overledger.dev/oauth2/token` |
+| `OVERLEDGER_BASE_URL` | API base | `https://api.overledger.dev` |
+
+---
+
+## API Surface (v1)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET    | `/health` | Service & dependency health |
+| GET    | `/v1/coinbase/wallets` | List wallets |
+| POST   | `/v1/coinbase/wallets` | Create wallet |
+| GET    | `/v1/coinbase/assets`  | List tradeable assets |
+| …      | *(many more – see `internal/api/router.go`)* | |
+
+All non-public routes require the `X-API-Key` header.
+
+---
+
+## Deployment on Koyeb
+
+1. Push code → GitHub (Koyeb is set to auto-build the Dockerfile).
+2. In the Koyeb service → **Settings → Environment** set the same variables shown above.
+3. Wait for the build to finish and status to be **Running**.
+4. Open `/health` in the browser – it should return HTTP 200 with `{"status":"healthy"}`.
+
+---
+
+## Project Layout & File Guide
+
+| Path | What it does |
+|------|--------------|
+| **`cmd/main.go`** | Program entry; loads env, DI, starts Gin server |
+| **`internal/api/router.go`** | Registers all REST routes & middleware |
+| **`internal/api/handlers.go`** | Implementation of HTTP handlers (Coinbase & Overledger) |
+| **`internal/config/config.go`** | Loads env vars into a typed `Config` struct |
+| **`internal/clients/coinbase.go`** | Minimal Coinbase CDP client – signs Ed25519 JWT, prefixes `/platform` |
+| **`internal/overledger/`** | Thin Overledger client + models |
+| **`internal/connector/service.go`** | Business layer bridging clients with handlers |
+| **`internal/utils/jwt.go`** | Helpers for creating CDP JWT + auth headers |
+| **`web/`** | Next.js 14 dashboard (App Router) |
+| &nbsp;&nbsp;`web/app/` | Top-level `layout.tsx`, global CSS, root page |
+| &nbsp;&nbsp;`web/components/` | Reusable React components + `api-client.ts` (fetch wrapper) |
+| **`Dockerfile`** | Multi-stage build → static frontend then Go binary on Alpine |
+| **`docker-compose.yml`** | Local one-shot dev stack (backend + Postgres demo) |
+| **`.env.example`** | Copy to `.env` – documents every variable |
+| **`test_api.ps1`** | Sample PowerShell script calling endpoints |
+
+For a deeper dive, see inline docstrings in each file.
+
+---
+
+## Development scripts
+
+```bash
+# run all Go tests
+go test ./...
+# lint (go vet + staticcheck suggested)
+make lint
+```
+
+---
+
+## Contributing
+
+1. Fork → feature branch
+2. Commit with conventional commits
+3. Make sure `go test ./...` & `npm test` pass
+4. Open PR – we squash-merge
+
+---
+
+## License
+
+MIT © 2025 Quant Network
 
 A middleware service that translates Quant Overledger API calls to Coinbase Mesh API requests, providing a unified interface for blockchain interactions.
 
