@@ -82,9 +82,11 @@ async function apiCall<T>(
     ...((options.headers as Record<string, string>) || {}),
   };
 
-  // Add API key for authentication (in production, this should be managed more securely)
-  const apiKey = process.env.NEXT_PUBLIC_API_KEY || 'development-api-key-12345678901234567890';
-  headers['X-API-Key'] = apiKey;
+  // Add API key for authentication if provided at build/runtime
+  const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+  if (apiKey) {
+    headers['X-API-Key'] = apiKey;
+  }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
