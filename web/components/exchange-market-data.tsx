@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { apiClient } from "@/components/api-client";
@@ -16,6 +16,12 @@ interface TickerMessage {
   time: string;
 }
 
+interface ProductSummary {
+  productId?: string;
+  product_id?: string;
+  id?: string;
+}
+
 export default function ExchangeMarketData() {
   const [selectedProduct, setSelectedProduct] = useState<string>("BTC-USD");
   const [products, setProducts] = useState<string[]>([]);
@@ -26,9 +32,10 @@ export default function ExchangeMarketData() {
   useEffect(() => {
     apiClient.exchange
       .listProducts()
-      .then((resp: any) => {
-        const items = resp?.products ?? resp?.data ?? [];
-        const ids = items.map((p: any) => p.productId || p.product_id || p.id);
+      .then((resp) => {
+        const cast = resp as { products?: ProductSummary[]; data?: ProductSummary[] };
+        const items = cast.products ?? cast.data ?? [];
+        const ids = items.map((p: ProductSummary) => p.productId || p.product_id || p.id);
         setProducts(ids.sort());
       })
       .catch((err) => console.error("Failed to fetch products", err));
@@ -59,7 +66,7 @@ export default function ExchangeMarketData() {
         if (data.type === "ticker") {
           setTicker(data);
         }
-      } catch (_) {
+      } catch {
         // ignore parse errors
       }
     };
@@ -83,9 +90,9 @@ export default function ExchangeMarketData() {
           <select
             className="rounded-md border bg-transparent p-1 text-sm dark:border-slate-700"
             value={selectedProduct}
-            onChange={(e) => setSelectedProduct(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedProduct(e.target.value)}
           >
-            {products.map((p) => (
+            {products.map((p: string) => (
               <option key={p} value={p}>
                 {p}
               </option>
@@ -102,7 +109,7 @@ export default function ExchangeMarketData() {
                 maximumFractionDigits: 2,
               })}
             </div>
-            <Badge variant={pctChange >= 0 ? "success" : "destructive"}>
+            <Badge variant={pctChange >= 0 ? "default" : "destructive"}>
               {pctChange >= 0 ? "+" : ""}
               {pctChange.toFixed(2)}%
             </Badge>
