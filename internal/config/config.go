@@ -33,13 +33,13 @@ func LoadConfig() *Config {
 
 	return &Config{
 		ServerAddress: getEnv("SERVER_ADDRESS", port),
-		APIKey:        getEnv("API_KEY", "development-api-key-12345678901234567890"),
+		APIKey:        getEnv("API_KEY", ""),
 		Environment:   getEnv("ENVIRONMENT", "development"),
 		LogLevel:      getEnv("LOG_LEVEL", "info"),
 
 		// Coinbase API Configuration
-		CoinbaseAPIKeyID:  getEnv("COINBASE_API_KEY_ID", "64b6c1ef-d093-42e7-b811-4cc19a342696"),
-		CoinbaseAPISecret: getEnv("COINBASE_API_SECRET", "32IrsqS1B8PcoN+iy+P/i3mNlZzXFPY66zLtJV/xsDQ+WphMqeOTTUSlb05FbaM9itHkZAjIzR3dPjgyl3ZiCg=="),
+		CoinbaseAPIKeyID:  getEnv("COINBASE_API_KEY_ID", "e082c10b-a1f7-4da4-a015-ae89f2026be6"),
+		CoinbaseAPISecret: getEnv("COINBASE_API_SECRET", "c3dv3lhUSH6TGN2KYPs316h9ArYDjdrxCqJW1Lu5cg77w/sYduUejymvqdyAL4O1dvCwmap/emyFu8SZYEbOvQ=="),
 		CoinbaseAPIURL:    getEnv("COINBASE_API_URL", "https://api.cdp.coinbase.com"),
 
 		// Overledger OAuth2 Configuration
