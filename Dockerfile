@@ -53,7 +53,7 @@ COPY --from=go-builder /app/.env .
 COPY --from=frontend-builder /app/web/out ./web
 
 # Copy documentation
-COPY --from=go-builder /app/docs ./docs
+#COPY --from=go-builder /app/docs ./docs
 
 # Set environment variables for production
 ENV GIN_MODE=release
