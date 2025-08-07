@@ -1,66 +1,48 @@
-# Stage 1: Build the frontend
-FROM node:18-alpine AS frontend-builder
+# Build stage
+FROM golang:1.21-alpine AS builder
 
-WORKDIR /app/web
-
-# Copy package files and install dependencies
-COPY web/package.json web/package-lock.json ./
-RUN npm install
-
-# Copy the rest of the frontend source code
-COPY web/ . 
-
-# Remove legacy construction PoC components that were deleted from the codebase but may linger in Docker cache
-RUN rm -f ./components/construction-*.tsx || true
-
-# Build the static frontend
-RUN npm run build
-
-# Stage 2: Build the Go backend
-FROM golang:1.21-alpine AS go-builder
-
+# Set working directory
 WORKDIR /app
 
-# Install git for Go modules
-RUN apk add --no-cache git
-
-# Copy Go module files and download dependencies
-COPY go.mod go.sum ./
+# IMPORTANT: Koyeb build context is the repo root. Explicitly copy the mesh-server module files
+# go.sum may not exist yet; copy go.mod only, download will generate go.sum
+COPY mesh-server/go.mod ./
 RUN go mod download
 
-# Copy the rest of the source code
-COPY . .
+# Copy mesh-server sources only
+COPY mesh-server/. .
 
-# Build the Go application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main cmd/main.go
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o mesh-server .
 
-# Stage 3: Create the final image
+# Final stage
 FROM alpine:latest
 
-# Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates
+# Install ca-certificates and wget for healthcheck
+RUN apk --no-cache add ca-certificates wget
 
-WORKDIR /root/
+# Create non-root user
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
 
-# Copy the Go binary from the go-builder stage
-COPY --from=go-builder /app/main .
+# Set working directory
+WORKDIR /app
 
-# Copy .env file for fallback local configuration (optional; environment variables in Koyeb override)
-COPY --from=go-builder /app/.env .
+# Copy binary from builder stage
+COPY --from=builder /app/mesh-server .
 
-# Copy the built frontend from the frontend-builder stage
-# The output of 'next export' is in the 'out' directory
-COPY --from=frontend-builder /app/web/out ./web
+# Change ownership to non-root user
+RUN chown -R appuser:appgroup /app
 
-# Copy documentation
-#COPY --from=go-builder /app/docs ./docs
+# Switch to non-root user
+USER appuser
 
-# Set environment variables for production
-ENV GIN_MODE=release
-ENV ENVIRONMENT=production
-
-# Expose the port the app runs on
+# Expose port
 EXPOSE 8080
 
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+
 # Run the application
-CMD ["./main"]
+CMD ["./mesh-server"] 
