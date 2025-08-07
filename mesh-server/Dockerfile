@@ -5,7 +5,8 @@ FROM golang:1.21-alpine AS builder
 WORKDIR /app
 
 # IMPORTANT: Koyeb build context is the repo root. Explicitly copy the mesh-server module files
-COPY mesh-server/go.mod mesh-server/go.sum ./
+# go.sum may not exist yet; copy go.mod only, download will generate go.sum
+COPY mesh-server/go.mod ./
 RUN go mod download
 
 # Copy mesh-server sources only
@@ -17,8 +18,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o mesh-server .
 # Final stage
 FROM alpine:latest
 
-# Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates
+# Install ca-certificates and wget for healthcheck
+RUN apk --no-cache add ca-certificates wget
 
 # Create non-root user
 RUN addgroup -g 1001 -S appgroup && \
