@@ -15,9 +15,13 @@ import (
 	"github.com/rutishh0/mesh-server/services"
 )
 
-const (
-	serverPort = 8080
-)
+func getPort() string {
+    p := os.Getenv("PORT")
+    if p == "" {
+        p = "8080"
+    }
+    return p
+}
 
 // NewBlockchainRouter creates a Mux http.Handler from a collection
 // of server controllers.
@@ -94,12 +98,13 @@ func main() {
 	// Mount the Mesh API router
 	ginRouter.Any("/mesh/*path", gin.WrapH(router))
 	
-	log.Printf("🚀 Starting Coinbase Mesh Server on port %d", serverPort)
-	log.Printf("📊 Network: %s %s", network.Blockchain, network.Network)
-	log.Printf("🔗 Mesh API available at: http://localhost:%d/mesh", serverPort)
-	log.Printf("🏥 Health check available at: http://localhost:%d/health", serverPort)
-	
-	if err := ginRouter.Run(fmt.Sprintf(":%d", serverPort)); err != nil {
+    port := getPort()
+    log.Printf("🚀 Starting Coinbase Mesh Server on port %s", port)
+    log.Printf("📊 Network: %s %s", network.Blockchain, network.Network)
+    log.Printf("🔗 Mesh API available at: http://localhost:%s/mesh", port)
+    log.Printf("🏥 Health check available at: http://localhost:%s/health", port)
+    
+    if err := ginRouter.Run(":" + port); err != nil {
 		log.Fatal("❌ Failed to start server:", err)
 	}
 } 
