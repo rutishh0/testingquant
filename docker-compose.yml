@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  quant-mesh-connector:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_ADDRESS=:8080
+      - MESH_API_URL=http://localhost:8080
+      - API_KEY=development-api-key-12345678901234567890
+      - ENVIRONMENT=development
+      - LOG_LEVEL=info
+    volumes:
+      - ./.env:/root/.env:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Example Ethereum node (commented out - requires actual node setup)
+  # ethereum-node:
+  #   image: ethereum/client-go:latest
+  #   ports:
+  #     - "8545:8545"
+  #     - "8546:8546"
+  #   command: |
+  #     --http
+  #     --http.addr=0.0.0.0
+  #     --http.port=8545
+  #     --http.corsdomain="*"
+  #     --http.api=eth,net,web3
+  #     --ws
+  #     --ws.addr=0.0.0.0
+  #     --ws.port=8546
+  #     --ws.origins="*"
+  #     --ws.api=eth,net,web3
+  #   volumes:
+  #     - ethereum-data:/root/.ethereum
+  #   restart: unless-stopped
+
+# volumes:
+#   ethereum-data:

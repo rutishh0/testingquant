@@ -1,0 +1,63 @@
+# Ignore the entire docs folder
+docs/
+
+# Ignore the internal/overledger folder
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+main
+bin/
+
+# Go test files
+*.test
+
+# Go coverage files
+*.out
+coverage.txt
+
+# Go module cache
+go.sum
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Docker related (optional - remove if you want to track these)
+
+
+# Screenshots and images (optional - uncomment if you don't want to track images)
+*.png
+*.jpg
+*.jpeg
+# *.gif
+
+# PowerShell scripts (optional - uncomment if you don't want to track PS scripts)
+*.ps1
