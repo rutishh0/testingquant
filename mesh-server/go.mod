@@ -37,4 +37,6 @@ require (
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
-) 
+)
+
+replace github.com/coinbase/mesh-sdk-go v0.6.8 => github.com/coinbase/rosetta-sdk-go v0.6.8
