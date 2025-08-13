@@ -57,7 +57,33 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 		c.File("./web/out/index.html")
 	})
 
-	// API v1 routes
+    // Mesh API (in-process): if cfg.MeshAPIURL points to this process, mount a
+    // lightweight reverse proxy that forwards /mesh/* to the internal Mesh
+    // server address in the same origin. This allows a single deployment
+    // serving UI, REST API, and Mesh.
+    router.Any("/mesh/*path", func(c *gin.Context) {
+        // Only proxy when base URL is loopback of the same process
+        if cfg.MeshAPIURL == "" || cfg.MeshAPIURL == "http://localhost:8080/mesh" || cfg.MeshAPIURL == "http://127.0.0.1:8080/mesh" || cfg.MeshAPIURL == ("http://127.0.0.1"+cfg.ServerAddress+"/mesh") {
+            target := "http://127.0.0.1" + cfg.ServerAddress + strings.TrimPrefix(c.Request.URL.Path, "")
+            req, _ := http.NewRequest(c.Request.Method, target, c.Request.Body)
+            req.Header = c.Request.Header.Clone()
+            resp, err := http.DefaultClient.Do(req)
+            if err != nil {
+                c.Status(http.StatusBadGateway)
+                return
+            }
+            defer resp.Body.Close()
+            for k, vv := range resp.Header {
+                for _, v := range vv { c.Writer.Header().Add(k, v) }
+            }
+            c.Status(resp.StatusCode)
+            io.Copy(c.Writer, resp.Body)
+            return
+        }
+        c.Status(http.StatusNotFound)
+    })
+
+    // API v1 routes
 	v1 := router.Group("/v1")
 	{
 		// Coinbase API endpoints
