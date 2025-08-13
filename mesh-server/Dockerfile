@@ -4,11 +4,13 @@ FROM golang:1.21-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# IMPORTANT: Koyeb build context is the repo root. Explicitly copy all mesh-server files.
-COPY mesh-server/. .
+# IMPORTANT: Koyeb build context is the repo root. Explicitly copy the mesh-server module files
+# go.sum may not exist yet; copy go.mod only, download will generate go.sum
+COPY mesh-server/go.mod ./
+RUN go mod download
 
-# Generate go.sum and download dependencies
-RUN go mod tidy
+# Copy mesh-server sources only
+COPY mesh-server/. .
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o mesh-server .

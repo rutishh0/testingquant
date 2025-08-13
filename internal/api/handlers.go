@@ -268,6 +268,40 @@ func (h *Handlers) GetCoinbaseTransactions(c *gin.Context) {
 	c.JSON(http.StatusOK, transactions)
 }
 
+// GetCoinbaseTransactionsPaginated handles GET /v1/coinbase/wallets/:walletId/transactions-paginated
+func (h *Handlers) GetCoinbaseTransactionsPaginated(c *gin.Context) {
+	walletID := c.Param("walletId")
+	if walletID == "" {
+		c.JSON(http.StatusBadRequest, connector.ErrorResponse{
+			Error:   "missing_wallet_id",
+			Message: "Wallet ID is required",
+			Code:    400,
+		})
+		return
+	}
+
+	limitStr := c.Query("limit")
+	cursor := c.Query("cursor")
+
+	limit := 25
+	if limitStr != "" {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
+	}
+
+	resp, err := h.connectorService.GetCoinbaseTransactionsPaginated(walletID, limit, cursor)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
+			Error:   "coinbase_transactions_failed",
+			Message: err.Error(),
+			Code:    500,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, resp)
+}
+
 // GetCoinbaseAssets handles GET /v1/coinbase/assets
 func (h *Handlers) GetCoinbaseAssets(c *gin.Context) {
 	assets, err := h.connectorService.GetCoinbaseAssets()

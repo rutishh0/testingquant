@@ -1,10 +1,9 @@
 package services
 
 import (
-	"context"
-	"fmt"
+    "context"
 
-	"github.com/coinbase/mesh-sdk-go/types"
+    "github.com/coinbase/rosetta-sdk-go/types"
 )
 
 // NetworkAPIService implements the Network API interface
@@ -106,17 +105,19 @@ func (s *NetworkAPIService) NetworkStatus(
 		},
 	}
 
-	return &types.NetworkStatusResponse{
+    stage := "synced"
+    synced := true
+    return &types.NetworkStatusResponse{
 		CurrentBlockIdentifier: currentBlock,
 		CurrentBlockTimestamp:  1640995200000, // Mock timestamp
 		GenesisBlockIdentifier: genesisBlock,
 		OldestBlockIdentifier:  genesisBlock,
-		SyncStatus: &types.SyncStatus{
-			CurrentIndex: &currentBlock.Index,
-			TargetIndex:  &currentBlock.Index,
-			Stage:        "synced",
-			Synced:       true,
-		},
+        SyncStatus: &types.SyncStatus{
+            CurrentIndex: &currentBlock.Index,
+            TargetIndex:  &currentBlock.Index,
+            Stage:        &stage,
+            Synced:       &synced,
+        },
 		Peers: peers,
 	}, nil
 } 

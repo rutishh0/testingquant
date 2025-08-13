@@ -58,6 +58,8 @@ type CoinbaseTransaction struct {
 // CoinbaseTransactionsResponse represents the response for a list of transactions
 type CoinbaseTransactionsResponse struct {
 	Transactions []CoinbaseTransaction `json:"transactions"`
+	NextCursor   string                `json:"next_cursor,omitempty"`
+	HasNext      bool                  `json:"has_next"`
 }
 
 // CoinbaseAddress represents a single address
@@ -92,4 +94,19 @@ type CoinbaseExchangeRates struct {
 // CoinbaseFeeEstimate represents the estimated fee for a transaction
 type CoinbaseFeeEstimate struct {
 	Fee string `json:"fee"`
+}
+
+// CoinbaseError represents Coinbase API error details  
+type CoinbaseError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Details string `json:"details,omitempty"`
+}
+
+// CoinbaseTransactionsPaginatedResponse includes pagination info
+type CoinbaseTransactionsPaginatedResponse struct {
+	Transactions []*CoinbaseTransaction `json:"transactions"`
+	NextCursor   string                 `json:"next_cursor,omitempty"`
+	HasNext      bool                   `json:"has_next"`
+	TotalCount   int                    `json:"total_count,omitempty"`
 }

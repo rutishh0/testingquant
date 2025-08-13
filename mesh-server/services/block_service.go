@@ -1,11 +1,9 @@
 package services
 
 import (
-	"context"
-	"fmt"
-	"strconv"
+    "context"
 
-	"github.com/coinbase/mesh-sdk-go/types"
+    "github.com/coinbase/rosetta-sdk-go/types"
 )
 
 // BlockAPIService implements the Block API interface
@@ -19,6 +17,9 @@ func NewBlockAPIService(network *types.NetworkIdentifier) *BlockAPIService {
 		network: network,
 	}
 }
+
+// helper to get *string
+func strPtr(s string) *string { return &s }
 
 // Block implements the /block endpoint
 func (s *BlockAPIService) Block(
@@ -56,8 +57,8 @@ func (s *BlockAPIService) Block(
 						OperationIdentifier: &types.OperationIdentifier{
 							Index: 0,
 						},
-						Type:   "Transfer",
-						Status: "SUCCESS",
+                        Type:   "Transfer",
+                        Status: strPtr("SUCCESS"),
 						Account: &types.AccountIdentifier{
 							Address: "0x1234567890abcdef1234567890abcdef1234567890",
 						},
@@ -70,8 +71,8 @@ func (s *BlockAPIService) Block(
 						OperationIdentifier: &types.OperationIdentifier{
 							Index: 1,
 						},
-						Type:   "Transfer",
-						Status: "SUCCESS",
+                        Type:   "Transfer",
+                        Status: strPtr("SUCCESS"),
 						Account: &types.AccountIdentifier{
 							Address: "0xabcdef1234567890abcdef1234567890abcdef1234",
 						},
@@ -124,8 +125,8 @@ func (s *BlockAPIService) BlockTransaction(
 				OperationIdentifier: &types.OperationIdentifier{
 					Index: 0,
 				},
-				Type:   "Transfer",
-				Status: "SUCCESS",
+                Type:   "Transfer",
+                Status: strPtr("SUCCESS"),
 				Account: &types.AccountIdentifier{
 					Address: "0x1234567890abcdef1234567890abcdef1234567890",
 				},
@@ -138,8 +139,8 @@ func (s *BlockAPIService) BlockTransaction(
 				OperationIdentifier: &types.OperationIdentifier{
 					Index: 1,
 				},
-				Type:   "Transfer",
-				Status: "SUCCESS",
+                Type:   "Transfer",
+                Status: strPtr("SUCCESS"),
 				Account: &types.AccountIdentifier{
 					Address: "0xabcdef1234567890abcdef1234567890abcdef1234",
 				},
@@ -152,8 +153,8 @@ func (s *BlockAPIService) BlockTransaction(
 				OperationIdentifier: &types.OperationIdentifier{
 					Index: 2,
 				},
-				Type:   "Fee",
-				Status: "SUCCESS",
+                Type:   "Fee",
+                Status: strPtr("SUCCESS"),
 				Account: &types.AccountIdentifier{
 					Address: "0x1234567890abcdef1234567890abcdef1234567890",
 				},

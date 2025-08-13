@@ -39,16 +39,23 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
     router.GET("/tests", handlers.RunTests)
 	
 	// Serve Next.js web application
-	router.Static("/web", "./web")
-	
-	// Serve the Next.js app at root for production
-	router.GET("/", func(c *gin.Context) {
-		c.File("./web/index.html")
-	})
+	router.Static("/web", "./web/out")
 	
 	// Handle Next.js static assets
-	router.Static("/_next", "./web/_next")
-	router.Static("/favicon.ico", "./web/favicon.ico")
+	router.Static("/_next", "./web/out/_next")
+	
+	// Serve specific static files
+	router.StaticFile("/favicon.ico", "./web/out/favicon.ico")
+	router.StaticFile("/file.svg", "./web/out/file.svg")
+	router.StaticFile("/globe.svg", "./web/out/globe.svg")
+	router.StaticFile("/next.svg", "./web/out/next.svg")
+	router.StaticFile("/vercel.svg", "./web/out/vercel.svg")
+	router.StaticFile("/window.svg", "./web/out/window.svg")
+	
+	// Serve the index.html file at the root path
+	router.GET("/", func(c *gin.Context) {
+		c.File("./web/out/index.html")
+	})
 
 	// API v1 routes
 	v1 := router.Group("/v1")
@@ -68,7 +75,8 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 			// Transaction operations
 			coinbase.POST("/wallets/:walletId/transactions", handlers.CreateCoinbaseTransaction)
 			coinbase.GET("/wallets/:walletId/transactions", handlers.GetCoinbaseTransactions)
-			coinbase.POST("/wallets/:walletId/transactions/estimate-fee", handlers.EstimateCoinbaseTransactionFee)
+			coinbase.GET("/wallets/:walletId/transactions-paginated", handlers.GetCoinbaseTransactionsPaginated)
+			coinbase.POST("/transactions", handlers.CreateCoinbaseTransaction)
 			coinbase.GET("/transactions/:transactionId", handlers.GetCoinbaseTransaction)
 			
 			// General information endpoints

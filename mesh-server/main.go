@@ -1,18 +1,17 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/http"
-	"os"
+    "log"
+    "net/http"
+    "os"
 
-	"github.com/coinbase/mesh-sdk-go/asserter"
-	"github.com/coinbase/mesh-sdk-go/server"
-	"github.com/coinbase/mesh-sdk-go/types"
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
-	"github.com/rutishh0/mesh-server/services"
+    "github.com/coinbase/rosetta-sdk-go/asserter"
+    "github.com/coinbase/rosetta-sdk-go/server"
+    "github.com/coinbase/rosetta-sdk-go/types"
+    "github.com/gin-contrib/cors"
+    "github.com/gin-gonic/gin"
+    "github.com/joho/godotenv"
+    "github.com/rutishh0/mesh-server/services"
 )
 
 func getPort() string {

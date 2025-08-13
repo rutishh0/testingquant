@@ -66,6 +66,30 @@ func RunAll(s connector.Service, cfg *config.Config) []Result {
             msg := "assets response OK"
             out = append(out, Result{Tier: 1, Name: "Coinbase assets", Success: true, Message: msg})
         }
+
+        // Test Coinbase wallets retrieval
+        if wallets, err := s.GetCoinbaseWallets(); err != nil {
+            out = append(out, Result{Tier: 1, Name: "Coinbase wallets", Success: false, Error: err.Error()})
+        } else {
+            msg := "wallets response OK"
+            out = append(out, Result{Tier: 1, Name: "Coinbase wallets", Success: true, Message: msg})
+
+            // If we have wallets, test paginated transactions endpoint
+            if len(wallets.Wallets) > 0 {
+                walletID := wallets.Wallets[0].ID
+                if resp, err := s.GetCoinbaseTransactionsPaginated(walletID, 10, ""); err != nil {
+                    out = append(out, Result{Tier: 1, Name: "Coinbase transactions (paginated)", Success: false, Error: err.Error()})
+                } else {
+                    msg := "paginated transactions response OK"
+                    if resp.HasNext {
+                        msg = "paginated transactions response OK with next page"
+                    }
+                    out = append(out, Result{Tier: 1, Name: "Coinbase transactions (paginated)", Success: true, Message: msg})
+                }
+            } else {
+                out = append(out, Result{Tier: 1, Name: "Coinbase transactions (paginated)", Success: false, Error: "no wallets available for testing"})
+            }
+        }
     }
 
     return out
