@@ -1,10 +1,10 @@
 package api
 
 import (
-    "io"
-    "net/http"
-    "strings"
-    "time"
+	"io"
+	"net/http"
+	"strings"
+	"time"
 
 	"github.com/rutishh0/testingquant/internal/config"
 	"github.com/rutishh0/testingquant/internal/connector"
@@ -36,8 +36,8 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 	// Health and status endpoints
 	router.GET("/health", handlers.Health)
 	router.GET("/status", handlers.Status)
-    // Automated tests endpoint
-    router.GET("/tests", handlers.RunTests)
+	// Automated tests endpoint
+	router.GET("/tests", handlers.RunTests)
 	
 	// Serve Next.js web application
 	router.Static("/web", "./web/out")
@@ -58,33 +58,45 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 		c.File("./web/out/index.html")
 	})
 
-    // Mesh API (in-process): if cfg.MeshAPIURL points to this process, mount a
-    // lightweight reverse proxy that forwards /mesh/* to the internal Mesh
-    // server address in the same origin. This allows a single deployment
-    // serving UI, REST API, and Mesh.
-    router.Any("/mesh/*path", func(c *gin.Context) {
-        // Only proxy when base URL is loopback of the same process
-        if cfg.MeshAPIURL == "" || cfg.MeshAPIURL == "http://localhost:8080/mesh" || cfg.MeshAPIURL == "http://127.0.0.1:8080/mesh" || cfg.MeshAPIURL == ("http://127.0.0.1"+cfg.ServerAddress+"/mesh") {
-            target := "http://127.0.0.1" + cfg.ServerAddress + strings.TrimPrefix(c.Request.URL.Path, "")
-            req, _ := http.NewRequest(c.Request.Method, target, c.Request.Body)
-            req.Header = c.Request.Header.Clone()
-            resp, err := http.DefaultClient.Do(req)
-            if err != nil {
-                c.Status(http.StatusBadGateway)
-                return
-            }
-            defer resp.Body.Close()
-            for k, vv := range resp.Header {
-                for _, v := range vv { c.Writer.Header().Add(k, v) }
-            }
-            c.Status(resp.StatusCode)
-            io.Copy(c.Writer, resp.Body)
-            return
-        }
-        c.Status(http.StatusNotFound)
-    })
+    // Embedded Mesh endpoints (in-process) to support a single deployment
+    meshRoot := router.Group("/mesh")
+    {
+        // Minimal spec-compatible responses sufficient for our adapter/UI
+        meshRoot.POST("/network/list", func(c *gin.Context) {
+            c.JSON(http.StatusOK, gin.H{
+                "network_identifiers": []gin.H{
+                    {"blockchain": "Coinbase", "network": "Mainnet"},
+                },
+            })
+        })
 
-    // API v1 routes
+        meshRoot.POST("/network/status", func(c *gin.Context) {
+            now := time.Now().UnixMilli()
+            c.JSON(http.StatusOK, gin.H{
+                "current_block_identifier": gin.H{"index": 1_000_000, "hash": "0xmock"},
+                "current_block_timestamp": now,
+                "genesis_block_identifier": gin.H{"index": 0, "hash": "0xgenesis"},
+            })
+        })
+
+        meshRoot.POST("/network/options", func(c *gin.Context) {
+            c.JSON(http.StatusOK, gin.H{
+                "version": gin.H{"rosetta_version": "1.4.13"},
+                "allow":   gin.H{"operation_statuses": []gin.H{}},
+            })
+        })
+
+        meshRoot.POST("/account/balance", func(c *gin.Context) {
+            c.JSON(http.StatusOK, gin.H{
+                "block_identifier": gin.H{"index": 1_000_000, "hash": "0xmock"},
+                "balances": []gin.H{
+                    {"value": "0", "currency": gin.H{"symbol": "ETH", "decimals": 18}},
+                },
+            })
+        })
+    }
+
+	// API v1 routes
 	v1 := router.Group("/v1")
 	{
 		// Coinbase API endpoints
@@ -197,7 +209,7 @@ func isPublicPath(path string) bool {
 		"/_next",
 		"/favicon.ico",
 		"/docs",
-        "/tests",
+		"/tests",
 	}
 
 	for _, publicPath := range publicPaths {
