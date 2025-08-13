@@ -4,6 +4,7 @@ import (
     "log"
     "net/http"
     "os"
+    "strings"
 
     "github.com/coinbase/rosetta-sdk-go/asserter"
     "github.com/coinbase/rosetta-sdk-go/server"
@@ -94,8 +95,15 @@ func main() {
 		})
 	})
 	
-	// Mount the Mesh API router
-	ginRouter.Any("/mesh/*path", gin.WrapH(router))
+    // Mount the Mesh API router at /mesh with path rewriting so the wrapped
+    // Rosetta router receives paths like /network/list (without the /mesh
+    // prefix). Without this rewrite, requests would reach the wrapped router as
+    // /mesh/network/list and return 404.
+    ginRouter.Any("/mesh/*path", func(c *gin.Context) {
+        r := c.Request.Clone(c.Request.Context())
+        r.URL.Path = strings.TrimPrefix(c.Request.URL.Path, "/mesh")
+        router.ServeHTTP(c.Writer, r)
+    })
 	
     port := getPort()
     log.Printf("🚀 Starting Coinbase Mesh Server on port %s", port)
