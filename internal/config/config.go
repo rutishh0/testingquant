@@ -1,7 +1,8 @@
 package config
 
 import (
-	"os"
+    "os"
+    "strconv"
 )
 
 // Config holds the application configuration
@@ -34,8 +35,21 @@ func LoadConfig() *Config {
 		port = ":" + port
 	}
 
-	return &Config{
-		ServerAddress: getEnv("SERVER_ADDRESS", port),
+    // Derive a safe server address. Some platforms don't expand ${PORT} in
+    // custom envs, so accept values like "${PORT}", "$PORT", plain numbers,
+    // or an empty SERVER_ADDRESS and fallback to PORT.
+    serverAddress := os.Getenv("SERVER_ADDRESS")
+    if serverAddress == "" || serverAddress == "${PORT}" || serverAddress == "$PORT" || serverAddress == os.Getenv("PORT") {
+        serverAddress = port
+    } else {
+        // If the value is a plain number like "8000", prepend a colon
+        if _, err := strconv.Atoi(serverAddress); err == nil {
+            serverAddress = ":" + serverAddress
+        }
+    }
+
+    return &Config{
+        ServerAddress: serverAddress,
 		APIKey:        getEnv("API_KEY", ""),
 		Environment:   getEnv("ENVIRONMENT", "development"),
 		LogLevel:      getEnv("LOG_LEVEL", "info"),
