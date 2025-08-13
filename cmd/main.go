@@ -57,9 +57,14 @@ func main() {
     // Initialize Mesh client (configurable)
     meshClient := clients.NewMeshClient(cfg.MeshAPIURL)
 
-	// Initialize adapters
-	coinbaseAdapter := coinbase.NewAdapter(coinbaseClient)
-	meshAdapter := mesh.NewAdapter(meshClient)
+    // Initialize adapters
+    var coinbaseAdapter coinbase.Adapter
+    if coinbaseClient != nil {
+        coinbaseAdapter = coinbase.NewAdapter(coinbaseClient)
+    } else {
+        coinbaseAdapter = nil
+    }
+    meshAdapter := mesh.NewAdapter(meshClient)
 
 	// Initialize connector service with all clients
 	connectorService := connector.NewService(coinbaseAdapter, meshAdapter, overledgerClient)
