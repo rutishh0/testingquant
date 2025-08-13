@@ -49,8 +49,8 @@ COPY --from=go-builder /app/main .
 COPY --from=go-builder /app/.env .
 
 # Copy the built frontend from the frontend-builder stage
-# The output of 'next export' is in the 'out' directory
-COPY --from=frontend-builder /app/web/out ./web
+# Place it under ./web/out so the Gin static paths match
+COPY --from=frontend-builder /app/web/out ./web/out
 
 # Copy documentation
 #COPY --from=go-builder /app/docs ./docs

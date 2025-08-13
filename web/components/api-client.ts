@@ -1,4 +1,9 @@
-const API_BASE_URL = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080';
+// Prefer an explicit backend base URL if provided, otherwise fall back to same origin.
+const API_BASE_URL =
+  (typeof window === 'undefined'
+    ? process.env.NEXT_PUBLIC_BACKEND_URL
+    : (window as any).__BACKEND_URL__) ||
+  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080');
 
 // API response types
 export interface HealthResponse {
