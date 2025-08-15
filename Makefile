@@ -80,6 +80,43 @@ docker-stop:
 	@echo "Stopping Docker Compose..."
 	$(DOCKER_COMPOSE) down
 
+# Clean up Docker
+docker-clean: docker-stop
+	docker rmi quant-mesh-connector || true
+	docker system prune -f
+
+# ================================================================
+# Mesh CLI commands
+# ================================================================
+
+# Run data validation against the running mesh server
+mesh-cli-validate:
+	go run ./test/validation/mesh_validation.go check:data
+
+# Run config-aware data validation (reads config/mesh-cli-config.json)
+mesh-cli-validate-config:
+	go run ./test/validation/mesh_config_validation.go check:data config/mesh-cli-config.json
+
+# Validate mesh configuration syntax and required fields
+mesh-cli-check-config:
+	go run ./test/validation/mesh_config_validation.go check:config config/mesh-cli-config.json
+
+# Conformance tests
+test-conformance:
+	go test ./test/conformance -v
+
+# Run all tests including mesh server conformance and validation
+mesh-cli-test: test-conformance mesh-cli-validate
+	@echo "All mesh tests completed successfully"
+
+# Start mesh server in background for testing
+mesh-server-start:
+	cd mesh-server && go run main.go &
+
+# Check if mesh server is running
+mesh-server-check:
+	@powershell -Command "try { Invoke-RestMethod -Uri 'http://localhost:8080/health' -Method Get | ConvertTo-Json } catch { Write-Host 'Mesh server is not running' }"
+
 # Setup development environment
 setup:
 	@echo "Setting up development environment..."
