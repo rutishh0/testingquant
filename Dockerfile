@@ -34,6 +34,11 @@ COPY . .
 # Build the Go application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main cmd/main.go
 
+# Build test binaries from ./test to execute at runtime for diagnostics
+RUN mkdir -p /app/tests && \
+    go test -c -o /app/tests/mesh_tests ./test/conformance || true && \
+    go test -c -o /app/tests/integration_tests ./test/integration || true
+
 # Stage 3: Create the final image
 FROM alpine:latest
 
@@ -47,6 +52,9 @@ COPY --from=go-builder /app/main .
 
 # Copy .env file for fallback local configuration (optional; environment variables in Koyeb override)
 COPY --from=go-builder /app/.env .
+
+# Copy compiled test binaries
+COPY --from=go-builder /app/tests ./tests
 
 # Copy the built frontend from the frontend-builder stage
 # Place it under ./web/out so the Gin static paths match
