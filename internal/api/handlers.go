@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"time"
+	"strings"
 
 	"github.com/rutishh0/testingquant/internal/config"
 	"github.com/rutishh0/testingquant/internal/connector"
@@ -61,6 +63,14 @@ func (h *Handlers) Status(c *gin.Context) {
 func (h *Handlers) GetCoinbaseWallets(c *gin.Context) {
 	wallets, err := h.connectorService.GetCoinbaseWallets()
 	if err != nil {
+		// Graceful fallback: if Coinbase isn't configured or endpoint is missing, return empty list
+		errStr := err.Error()
+		if strings.Contains(errStr, "not initialized") || strings.Contains(errStr, "404") || strings.Contains(errStr, "no matching operation") {
+			c.JSON(http.StatusOK, map[string]interface{}{
+				"data": []interface{}{},
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
 			Error:   "coinbase_wallets_failed",
 			Message: err.Error(),
@@ -68,7 +78,10 @@ func (h *Handlers) GetCoinbaseWallets(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(http.StatusOK, wallets)
+	// Return in the format expected by the frontend: { data: [...] }
+	c.JSON(http.StatusOK, map[string]interface{}{
+		"data": wallets.Wallets,
+	})
 }
 
 // CreateCoinbaseWallet handles POST /v1/coinbase/wallets
@@ -309,6 +322,14 @@ func (h *Handlers) GetCoinbaseTransactionsPaginated(c *gin.Context) {
 func (h *Handlers) GetCoinbaseAssets(c *gin.Context) {
 	assets, err := h.connectorService.GetCoinbaseAssets()
 	if err != nil {
+		// Graceful fallback for missing Coinbase integration or 404s
+		errStr := err.Error()
+		if strings.Contains(errStr, "not initialized") || strings.Contains(errStr, "404") || strings.Contains(errStr, "no matching operation") {
+			c.JSON(http.StatusOK, map[string]interface{}{
+				"data": []interface{}{},
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
 			Error:   "coinbase_assets_failed",
 			Message: err.Error(),
@@ -316,13 +337,22 @@ func (h *Handlers) GetCoinbaseAssets(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(http.StatusOK, assets)
+	// Return in the format expected by the frontend: { data: [...] }
+	c.JSON(http.StatusOK, map[string]interface{}{
+		"data": assets,
+	})
 }
 
 // GetCoinbaseNetworks handles GET /v1/coinbase/networks
 func (h *Handlers) GetCoinbaseNetworks(c *gin.Context) {
 	networks, err := h.connectorService.GetCoinbaseNetworks()
 	if err != nil {
+		// Graceful fallback for missing Coinbase integration or 404s
+		errStr := err.Error()
+		if strings.Contains(errStr, "not initialized") || strings.Contains(errStr, "404") || strings.Contains(errStr, "no matching operation") {
+			c.JSON(http.StatusOK, []interface{}{})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
 			Error:   "coinbase_networks_failed",
 			Message: err.Error(),
@@ -339,6 +369,21 @@ func (h *Handlers) GetCoinbaseExchangeRates(c *gin.Context) {
 	
 	rates, err := h.connectorService.GetCoinbaseExchangeRates(baseCurrency)
 	if err != nil {
+		// Fallback to an empty rates object so UI can still render
+		errStr := err.Error()
+		if strings.Contains(errStr, "not initialized") || strings.Contains(errStr, "404") || strings.Contains(errStr, "no matching operation") {
+			if baseCurrency == "" {
+				baseCurrency = "USD"
+			}
+			c.JSON(http.StatusOK, map[string]interface{}{
+				"data": map[string]interface{}{
+					"currency":   baseCurrency,
+					"rates":      map[string]string{},
+					"updated_at": time.Now().UTC().Format(time.RFC3339),
+				},
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
 			Error:   "coinbase_exchange_rates_failed",
 			Message: err.Error(),
@@ -346,7 +391,14 @@ func (h *Handlers) GetCoinbaseExchangeRates(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(http.StatusOK, rates)
+	// Frontend expects { data: { currency, rates, updated_at } }
+	c.JSON(http.StatusOK, map[string]interface{}{
+		"data": map[string]interface{}{
+			"currency": rates.Base,
+			"rates":   rates.Rates,
+			"updated_at": time.Now().UTC().Format(time.RFC3339),
+		},
+	})
 }
 
 // EstimateCoinbaseTransactionFee handles POST /v1/coinbase/wallets/:walletId/transactions/estimate-fee
@@ -373,6 +425,12 @@ func (h *Handlers) EstimateCoinbaseTransactionFee(c *gin.Context) {
 
 	feeEstimate, err := h.connectorService.EstimateCoinbaseTransactionFee(walletID, &req)
 	if err != nil {
+		// Graceful fallback similar to other Coinbase endpoints
+		errStr := err.Error()
+		if strings.Contains(errStr, "not initialized") || strings.Contains(errStr, "404") || strings.Contains(errStr, "no matching operation") {
+			c.JSON(http.StatusOK, map[string]string{"fee": "0"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
 			Error:   "coinbase_fee_estimate_failed",
 			Message: err.Error(),

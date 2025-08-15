@@ -36,8 +36,16 @@ type CoinbaseBalanceResponse struct {
 
 // CoinbaseAsset represents a single asset
 type CoinbaseAsset struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	AssetID         string `json:"asset_id"`
+	ID              string `json:"id"` // Backward compatibility
+	Name            string `json:"name"`
+	Symbol          string `json:"symbol"`
+	Decimals        int    `json:"decimals"`
+	DisplayName     string `json:"display_name"`
+	AddressFormat   string `json:"address_format"`
+	ExplorerURL     string `json:"explorer_url,omitempty"`
+	ContractAddress string `json:"contract_address,omitempty"`
+	ImageURL        string `json:"image_url,omitempty"`
 }
 
 // CoinbaseAssetsResponse represents the response for a list of assets
@@ -87,7 +95,7 @@ type CoinbaseNetworkInfo struct {
 
 // CoinbaseExchangeRates represents the exchange rates for a base currency
 type CoinbaseExchangeRates struct {
-	Base  string             `json:"base"`
+	Base  string            `json:"base"`
 	Rates map[string]string `json:"rates"`
 }
 
@@ -96,7 +104,7 @@ type CoinbaseFeeEstimate struct {
 	Fee string `json:"fee"`
 }
 
-// CoinbaseError represents Coinbase API error details  
+// CoinbaseError represents Coinbase API error details
 type CoinbaseError struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`

@@ -3,7 +3,6 @@ package conformance
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"testing"
@@ -39,22 +38,22 @@ func NewMeshTestSuite(baseURL string) *MeshTestSuite {
 // TestNetworkList tests the /network/list endpoint
 func TestNetworkList(t *testing.T) {
 	suite := NewMeshTestSuite("")
-	
+
 	resp, err := suite.post("/network/list", map[string]interface{}{})
 	require.NoError(t, err)
 	defer resp.Body.Close()
-	
+
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Network list should return 200")
-	
+
 	var result map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err)
-	
+
 	// Verify response structure
 	networks, ok := result["network_identifiers"].([]interface{})
 	assert.True(t, ok, "Response should contain network_identifiers array")
 	assert.NotEmpty(t, networks, "Should have at least one network")
-	
+
 	// Check first network structure
 	if len(networks) > 0 {
 		network := networks[0].(map[string]interface{})
@@ -66,24 +65,24 @@ func TestNetworkList(t *testing.T) {
 // TestNetworkStatus tests the /network/status endpoint
 func TestNetworkStatus(t *testing.T) {
 	suite := NewMeshTestSuite("")
-	
+
 	payload := map[string]interface{}{
 		"network_identifier": map[string]string{
 			"blockchain": "Coinbase",
 			"network":    "Mainnet",
 		},
 	}
-	
+
 	resp, err := suite.post("/network/status", payload)
 	require.NoError(t, err)
 	defer resp.Body.Close()
-	
+
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Network status should return 200")
-	
+
 	var result map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err)
-	
+
 	// Verify required fields
 	assert.Contains(t, result, "current_block_identifier")
 	assert.Contains(t, result, "current_block_timestamp")
@@ -93,24 +92,24 @@ func TestNetworkStatus(t *testing.T) {
 // TestNetworkOptions tests the /network/options endpoint
 func TestNetworkOptions(t *testing.T) {
 	suite := NewMeshTestSuite("")
-	
+
 	payload := map[string]interface{}{
 		"network_identifier": map[string]string{
 			"blockchain": "Coinbase",
 			"network":    "Mainnet",
 		},
 	}
-	
+
 	resp, err := suite.post("/network/options", payload)
 	require.NoError(t, err)
 	defer resp.Body.Close()
-	
+
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Network options should return 200")
-	
+
 	var result map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err)
-	
+
 	// Verify required fields
 	assert.Contains(t, result, "version")
 	assert.Contains(t, result, "allow")
@@ -119,7 +118,7 @@ func TestNetworkOptions(t *testing.T) {
 // TestAccountBalance tests the /account/balance endpoint
 func TestAccountBalance(t *testing.T) {
 	suite := NewMeshTestSuite("")
-	
+
 	payload := map[string]interface{}{
 		"network_identifier": map[string]string{
 			"blockchain": "Coinbase",
@@ -129,17 +128,17 @@ func TestAccountBalance(t *testing.T) {
 			"address": "0x1234567890abcdef1234567890abcdef12345678",
 		},
 	}
-	
+
 	resp, err := suite.post("/account/balance", payload)
 	require.NoError(t, err)
 	defer resp.Body.Close()
-	
+
 	// Account balance may return 404 for non-existent accounts, which is valid
 	if resp.StatusCode == http.StatusOK {
 		var result map[string]interface{}
 		err = json.NewDecoder(resp.Body).Decode(&result)
 		require.NoError(t, err)
-		
+
 		assert.Contains(t, result, "block_identifier")
 		assert.Contains(t, result, "balances")
 	}
@@ -148,7 +147,7 @@ func TestAccountBalance(t *testing.T) {
 // TestBlock tests the /block endpoint
 func TestBlock(t *testing.T) {
 	suite := NewMeshTestSuite("")
-	
+
 	payload := map[string]interface{}{
 		"network_identifier": map[string]string{
 			"blockchain": "Coinbase",
@@ -158,16 +157,16 @@ func TestBlock(t *testing.T) {
 			"index": 1000000,
 		},
 	}
-	
+
 	resp, err := suite.post("/block", payload)
 	require.NoError(t, err)
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode == http.StatusOK {
 		var result map[string]interface{}
 		err = json.NewDecoder(resp.Body).Decode(&result)
 		require.NoError(t, err)
-		
+
 		// Verify block structure
 		block, ok := result["block"].(map[string]interface{})
 		assert.True(t, ok, "Response should contain block object")
@@ -180,7 +179,7 @@ func TestBlock(t *testing.T) {
 // TestMalformedRequests tests error handling for invalid requests
 func TestMalformedRequests(t *testing.T) {
 	suite := NewMeshTestSuite("")
-	
+
 	testCases := []struct {
 		name     string
 		endpoint string
@@ -207,13 +206,13 @@ func TestMalformedRequests(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			resp, err := suite.post(tc.endpoint, tc.payload)
 			require.NoError(t, err)
 			defer resp.Body.Close()
-			
+
 			// Should return 4xx or 5xx for malformed requests
 			assert.True(t, resp.StatusCode >= 400, "Should return error status for malformed request")
 		})
@@ -230,16 +229,16 @@ func (s *MeshTestSuite) post(endpoint string, payload interface{}) (*http.Respon
 		}
 		body = bytes.NewReader(jsonData)
 	}
-	
+
 	url := s.baseURL + meshEndpoint + endpoint
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	
+
 	return s.httpClient.Do(req)
 }
 
@@ -249,7 +248,7 @@ func TestMeshAPIConformance(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration tests in short mode")
 	}
-	
+
 	t.Run("NetworkList", TestNetworkList)
 	t.Run("NetworkStatus", TestNetworkStatus)
 	t.Run("NetworkOptions", TestNetworkOptions)
