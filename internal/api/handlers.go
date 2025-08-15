@@ -382,8 +382,47 @@ func (h *Handlers) EstimateCoinbaseTransactionFee(c *gin.Context) {
 
 // RunTests handles GET /tests and returns automated test results
 func (h *Handlers) RunTests(c *gin.Context) {
-	results := tests.RunAll(h.connectorService, h.cfg)
-	c.JSON(http.StatusOK, results)
+    // If compiled test binaries are present in /app/tests, execute them and
+    // return a combined JSON so the frontend can copy/paste full logs.
+    // Fallback to internal tiered tests otherwise.
+    type externalResult struct {
+        Suite   string        `json:"suite"`
+        Output  string        `json:"output"`
+        Success bool          `json:"success"`
+    }
+
+    var external []externalResult
+
+    // Attempt to run compiled tests (best-effort, ignore errors on platforms without exec)
+    if out, ok := execTestBinary("/app/tests/mesh_tests"); ok {
+        external = append(external, externalResult{Suite: "mesh", Output: out, Success: true})
+    }
+    if out, ok := execTestBinary("/app/tests/integration_tests"); ok {
+        external = append(external, externalResult{Suite: "integration", Output: out, Success: true})
+    }
+
+    results := tests.RunAll(h.connectorService, h.cfg)
+
+    c.JSON(http.StatusOK, gin.H{
+        "tiered":   results,
+        "external": external,
+    })
+}
+
+// execTestBinary runs a test binary if it exists and returns its stdout.
+func execTestBinary(path string) (string, bool) {
+    f, err := os.Stat(path)
+    if err != nil || f.IsDir() {
+        return "", false
+    }
+    cmd := exec.Command(path, "-test.v")
+    var buf bytes.Buffer
+    cmd.Stdout = &buf
+    cmd.Stderr = &buf
+    if err := cmd.Run(); err != nil {
+        return buf.String(), false
+    }
+    return buf.String(), true
 }
 
 // Exchange Handlers
