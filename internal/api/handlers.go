@@ -13,6 +13,7 @@ import (
     "github.com/rutishh0/testingquant/internal/connector"
     "github.com/rutishh0/testingquant/internal/overledger"
     "github.com/rutishh0/testingquant/internal/clients"
+    "github.com/rutishh0/testingquant/internal/tests"
 
     "github.com/gin-gonic/gin"
 )
