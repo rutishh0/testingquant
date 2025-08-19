@@ -26,6 +26,9 @@ RUN apk add --no-cache git
 
 # Copy Go module files and download dependencies
 COPY go.mod go.sum ./
+# Also copy local replace module files so `go mod download` can resolve `replace github.com/rutishh0/mesh-server => ./mesh-server`
+COPY mesh-server/go.mod ./mesh-server/go.mod
+COPY mesh-server/go.sum ./mesh-server/go.sum
 RUN go mod download
 
 # Copy the rest of the source code
