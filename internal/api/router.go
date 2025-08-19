@@ -39,6 +39,12 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 	// Tests endpoint can be public in development; protect via API key in production by setting X-API-Key
 	router.GET("/tests", handlers.RunTests)
 
+	// Serve static Next.js export from ./web/out (copied to /root/web/out in Dockerfile)
+	router.Static("/_next", "./web/out/_next")
+	router.Static("/static", "./web/out/static")
+	router.StaticFile("/favicon.ico", "./web/out/favicon.ico")
+	router.StaticFile("/", "./web/out/index.html")
+
 	// Apply API key middleware to all routes except public ones
 	router.Use(apiKeyMiddleware(cfg))
 
