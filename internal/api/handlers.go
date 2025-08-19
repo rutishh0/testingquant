@@ -447,22 +447,41 @@ func (h *Handlers) RunTests(c *gin.Context) {
     // return a combined JSON so the frontend can copy/paste full logs.
     // Fallback to internal tiered tests otherwise.
     type externalResult struct {
-        Suite   string        `json:"suite"`
-        Output  string        `json:"output"`
-        Success bool          `json:"success"`
+        Suite   string `json:"suite"`
+        Output  string `json:"output"`
+        Success bool   `json:"success"`
     }
 
     var external []externalResult
 
-    // Attempt to run compiled tests (best-effort, ignore errors on platforms without exec)
-    if out, ok := execTestBinary("/app/tests/mesh_tests"); ok {
-        external = append(external, externalResult{Suite: "mesh", Output: out, Success: true})
-    }
-    if out, ok := execTestBinary("/app/tests/integration_tests"); ok {
-        external = append(external, externalResult{Suite: "integration", Output: out, Success: true})
+    // Collect external runs, keeping success flags. Try compiled binaries first,
+    // then local ./tests, then fall back to `go test` / `go run` so this works
+    // both in Docker and local dev.
+    for _, suite := range []string{"mesh", "integration", "mesh_config_validation", "mesh_validation"} {
+        if out, ok := execSuiteWithFallback(suite); ok || out != "" {
+            external = append(external, externalResult{Suite: suite, Output: out, Success: ok})
+        }
     }
 
+    // Run internal tiered tests
     results := tests.RunAll(h.connectorService, h.cfg)
+
+    // Also surface external results inside the tiered list so the existing frontend UI can display them.
+    // Use Tier 4 for external/compiled suites.
+    for _, ex := range external {
+        name := "External: " + ex.Suite
+        msg := ex.Output
+        // Trim excessively long logs to keep payload manageable (optional simple cap)
+        if len(msg) > 15000 { // ~15KB cap
+            msg = msg[:15000] + "\n... (truncated)"
+        }
+        results = append(results, tests.Result{
+            Tier:    4,
+            Name:    name,
+            Success: ex.Success,
+            Message: msg,
+        })
+    }
 
     c.JSON(http.StatusOK, gin.H{
         "tiered":   results,
@@ -471,12 +490,12 @@ func (h *Handlers) RunTests(c *gin.Context) {
 }
 
 // execTestBinary runs a test binary if it exists and returns its stdout.
-func execTestBinary(path string) (string, bool) {
+func execTestBinary(path string, args ...string) (string, bool) {
     f, err := os.Stat(path)
     if err != nil || f.IsDir() {
         return "", false
     }
-    cmd := exec.Command(path, "-test.v")
+    cmd := exec.Command(path, args...)
     var buf bytes.Buffer
     cmd.Stdout = &buf
     cmd.Stderr = &buf
@@ -484,6 +503,64 @@ func execTestBinary(path string) (string, bool) {
         return buf.String(), false
     }
     return buf.String(), true
+}
+
+// execCommand runs an arbitrary command and captures stdout/stderr and success.
+func execCommand(name string, args ...string) (string, bool) {
+    var buf bytes.Buffer
+    cmd := exec.Command(name, args...)
+    cmd.Stdout = &buf
+    cmd.Stderr = &buf
+    if err := cmd.Run(); err != nil {
+        return buf.String(), false
+    }
+    return buf.String(), true
+}
+
+// execSuiteWithFallback tries multiple strategies per suite:
+// 1) compiled binaries in /app/tests (Docker image)
+// 2) compiled binaries in ./tests (local dev builds)
+// 3) go test / go run fallbacks for local development
+func execSuiteWithFallback(suite string) (string, bool) {
+    switch suite {
+    case "mesh":
+        if out, ok := execTestBinary("/app/tests/mesh_tests", "-test.v"); ok || out != "" {
+            return out, ok
+        }
+        if out, ok := execTestBinary("./tests/mesh_tests", "-test.v"); ok || out != "" {
+            return out, ok
+        }
+        return execCommand("go", "test", "./test/conformance", "-v")
+
+    case "integration":
+        if out, ok := execTestBinary("/app/tests/integration_tests", "-test.v"); ok || out != "" {
+            return out, ok
+        }
+        if out, ok := execTestBinary("./tests/integration_tests", "-test.v"); ok || out != "" {
+            return out, ok
+        }
+        return execCommand("go", "test", "./test/integration", "-v")
+
+    case "mesh_config_validation":
+        if out, ok := execTestBinary("/app/tests/mesh_config_validation", "check:data"); ok || out != "" {
+            return out, ok
+        }
+        if out, ok := execTestBinary("./tests/mesh_config_validation", "check:data"); ok || out != "" {
+            return out, ok
+        }
+        return execCommand("go", "run", "./test/validation/mesh_config_validation.go", "check:data")
+
+    case "mesh_validation":
+        if out, ok := execTestBinary("/app/tests/mesh_validation", "check:data"); ok || out != "" {
+            return out, ok
+        }
+        if out, ok := execTestBinary("./tests/mesh_validation", "check:data"); ok || out != "" {
+            return out, ok
+        }
+        return execCommand("go", "run", "./test/validation/mesh_validation.go", "check:data")
+    default:
+        return "", false
+    }
 }
 
 // Exchange Handlers

@@ -37,7 +37,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main cmd/main.go
 # Build test binaries from ./test to execute at runtime for diagnostics
 RUN mkdir -p /app/tests && \
     go test -c -o /app/tests/mesh_tests ./test/conformance || true && \
-    go test -c -o /app/tests/integration_tests ./test/integration || true
+    go test -c -o /app/tests/integration_tests ./test/integration || true && \
+    go build -o /app/tests/mesh_config_validation ./test/validation/mesh_config_validation.go || true && \
+    go build -o /app/tests/mesh_validation ./test/validation/mesh_validation.go || true
 
 # Stage 3: Create the final image
 FROM alpine:latest
