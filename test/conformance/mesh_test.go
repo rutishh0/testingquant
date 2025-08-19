@@ -68,8 +68,8 @@ func TestNetworkStatus(t *testing.T) {
 
 	payload := map[string]interface{}{
 		"network_identifier": map[string]string{
-			"blockchain": "Coinbase",
-			"network":    "Mainnet",
+			"blockchain": "Ethereum",
+			"network":    "Sepolia",
 		},
 	}
 
@@ -95,8 +95,8 @@ func TestNetworkOptions(t *testing.T) {
 
 	payload := map[string]interface{}{
 		"network_identifier": map[string]string{
-			"blockchain": "Coinbase",
-			"network":    "Mainnet",
+			"blockchain": "Ethereum",
+			"network":    "Sepolia",
 		},
 	}
 
@@ -121,8 +121,8 @@ func TestAccountBalance(t *testing.T) {
 
 	payload := map[string]interface{}{
 		"network_identifier": map[string]string{
-			"blockchain": "Coinbase",
-			"network":    "Mainnet",
+			"blockchain": "Ethereum",
+			"network":    "Sepolia",
 		},
 		"account_identifier": map[string]string{
 			"address": "0x1234567890abcdef1234567890abcdef12345678",
@@ -150,8 +150,8 @@ func TestBlock(t *testing.T) {
 
 	payload := map[string]interface{}{
 		"network_identifier": map[string]string{
-			"blockchain": "Coinbase",
-			"network":    "Mainnet",
+			"blockchain": "Ethereum",
+			"network":    "Sepolia",
 		},
 		"block_identifier": map[string]interface{}{
 			"index": 1000000,
@@ -200,7 +200,7 @@ func TestMalformedRequests(t *testing.T) {
 			endpoint: "/account/balance",
 			payload: map[string]interface{}{
 				"network_identifier": map[string]string{
-					"blockchain": "Coinbase",
+					"blockchain": "Ethereum",
 				},
 				// Missing account_identifier
 			},

@@ -1,3 +1,5 @@
+//go:build validation
+
 package main
 
 import (
@@ -47,8 +49,8 @@ type ValidationConfig struct {
 func main() {
 	config := ValidationConfig{
 		Network: NetworkIdentifier{
-			Blockchain: "Coinbase",
-			Network:    "Mainnet",
+			Blockchain: "Ethereum",
+			Network:    "Sepolia",
 		},
 		BaseURL: "http://localhost:8080",
 		Timeout: 10 * time.Second,

@@ -54,7 +54,7 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 	// Mount Rosetta-compliant Mesh API under /mesh using services from mesh-server module
 	// This enables validation tests to call /mesh/network/*, /mesh/account/*, /mesh/block*, etc.
 	{
-		network := &types.NetworkIdentifier{Blockchain: "Coinbase", Network: "Mainnet"}
+		network := &types.NetworkIdentifier{Blockchain: "Ethereum", Network: "Sepolia"}
 		assr, err := asserter.NewServer(
 			[]string{"Transfer", "Reward", "Fee"},
 			false,

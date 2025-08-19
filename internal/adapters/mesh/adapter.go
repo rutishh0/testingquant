@@ -29,11 +29,29 @@ func (a *meshAdapter) ListNetworks() (*models.MeshNetworksResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	var networks models.MeshNetworksResponse
-	if err := json.NewDecoder(resp.Body).Decode(&networks); err != nil {
+	// Decode Rosetta NetworkListResponse and map to internal model with currency metadata
+	var rosettaResp struct {
+		NetworkIdentifiers []struct {
+			Blockchain string `json:"blockchain"`
+			Network    string `json:"network"`
+		} `json:"network_identifiers"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&rosettaResp); err != nil {
 		return nil, err
 	}
-	return &networks, nil
+
+	networks := make([]models.MeshNetwork, 0, len(rosettaResp.NetworkIdentifiers))
+	for _, ni := range rosettaResp.NetworkIdentifiers {
+		var mn models.MeshNetwork
+		mn.NetworkIdentifier.Blockchain = ni.Blockchain
+		mn.NetworkIdentifier.Network = ni.Network
+		// Provide sensible defaults for currency metadata for display
+		mn.Currency.Symbol = "ETH"
+		mn.Currency.Decimals = 18
+		networks = append(networks, mn)
+	}
+
+	return &models.MeshNetworksResponse{Networks: networks}, nil
 }
 
 func (a *meshAdapter) AccountBalance(networkIdentifier, accountIdentifier interface{}) (*models.MeshBalanceResponse, error) {

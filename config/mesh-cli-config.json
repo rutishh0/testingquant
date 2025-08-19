@@ -1,7 +1,7 @@
 {
   "network": {
-    "blockchain": "Coinbase",
-    "network": "Mainnet"
+    "blockchain": "Ethereum",
+    "network": "Sepolia"
   },
   "online_url": "http://localhost:8080/mesh",
   "data": {

@@ -59,8 +59,8 @@ func main() {
 	}
 
 	network := &types.NetworkIdentifier{
-		Blockchain: "Coinbase",
-		Network:    "Mainnet",
+        Blockchain: "Ethereum",
+        Network:    "Sepolia",
 	}
 
 	// The asserter automatically rejects incorrectly formatted
@@ -114,4 +114,4 @@ func main() {
     if err := ginRouter.Run(":" + port); err != nil {
 		log.Fatal("❌ Failed to start server:", err)
 	}
-} 
+}
