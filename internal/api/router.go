@@ -4,12 +4,18 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"log"
 
 	"github.com/rutishh0/testingquant/internal/config"
 	"github.com/rutishh0/testingquant/internal/connector"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	// Rosetta + Mesh services
+	"github.com/coinbase/rosetta-sdk-go/asserter"
+	"github.com/coinbase/rosetta-sdk-go/server"
+	"github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/rutishh0/mesh-server/services"
 )
 
 // SetupRouter configures the Gin router and routes
@@ -44,6 +50,41 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 	router.Static("/static", "./web/out/static")
 	router.StaticFile("/favicon.ico", "./web/out/favicon.ico")
 	router.StaticFile("/", "./web/out/index.html")
+
+	// Mount Rosetta-compliant Mesh API under /mesh using services from mesh-server module
+	// This enables validation tests to call /mesh/network/*, /mesh/account/*, /mesh/block*, etc.
+	{
+		network := &types.NetworkIdentifier{Blockchain: "Coinbase", Network: "Mainnet"}
+		assr, err := asserter.NewServer(
+			[]string{"Transfer", "Reward", "Fee"},
+			false,
+			[]*types.NetworkIdentifier{network},
+			nil,
+			false,
+			"",
+		)
+		if err != nil {
+			log.Printf("Failed to initialize Mesh Rosetta asserter: %v", err)
+		} else {
+			networkAPIService := services.NewNetworkAPIService(network)
+			networkAPIController := server.NewNetworkAPIController(networkAPIService, assr)
+
+			blockAPIService := services.NewBlockAPIService(network)
+			blockAPIController := server.NewBlockAPIController(blockAPIService, assr)
+
+			accountAPIService := services.NewAccountAPIService(network)
+			accountAPIController := server.NewAccountAPIController(accountAPIService, assr)
+
+			rosettaRouter := server.NewRouter(networkAPIController, blockAPIController, accountAPIController)
+
+			// Path rewrite so wrapped router sees /network/list (no /mesh prefix)
+			router.Any("/mesh/*path", func(c *gin.Context) {
+				r := c.Request.Clone(c.Request.Context())
+				r.URL.Path = strings.TrimPrefix(c.Request.URL.Path, "/mesh")
+				rosettaRouter.ServeHTTP(c.Writer, r)
+			})
+		}
+	}
 
 	// Apply API key middleware to all routes except public ones
 	router.Use(apiKeyMiddleware(cfg))
@@ -143,7 +184,7 @@ func apiKeyMiddleware(cfg *config.Config) gin.HandlerFunc {
 
 // isPublicPath checks if the path is public and does not require API key
 func isPublicPath(path string) bool {
-	if path == "/health" || path == "/status" || path == "/tests" || strings.HasPrefix(path, "/_next/") || strings.HasPrefix(path, "/static/") || path == "/" {
+	if path == "/health" || path == "/status" || path == "/tests" || strings.HasPrefix(path, "/_next/") || strings.HasPrefix(path, "/static/") || path == "/" || strings.HasPrefix(path, "/mesh/") {
 		return true
 	}
 	return false
