@@ -4,18 +4,11 @@ docs/
 # Ignore the internal/overledger folder
 
 # Environment files
-.env
+
 .env.local
 .env.*.local
 
 # Go build artifacts
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-main
-bin/
 
 # Go test files
 *.test
@@ -25,7 +18,7 @@ bin/
 coverage.txt
 
 # Go module cache
-go.sum
+
 
 # IDE and editor files
 .vscode/
@@ -54,10 +47,7 @@ Thumbs.db
 
 
 # Screenshots and images (optional - uncomment if you don't want to track images)
-*.png
-*.jpg
-*.jpeg
-# *.gif
+
 
 # PowerShell scripts (optional - uncomment if you don't want to track PS scripts)
 *.ps1

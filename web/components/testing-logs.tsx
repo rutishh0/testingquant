@@ -57,9 +57,10 @@ export default function TestingLogs() {
     );
   }
 
-  // Group by tier
+  // Group by tier (extra safety: coerce to array)
+  const list: TestResult[] = Array.isArray(results) ? results : [];
   const grouped: Record<number, TestResult[]> = {};
-  results.forEach((r) => {
+  list.forEach((r) => {
     grouped[r.tier] = grouped[r.tier] ? [...grouped[r.tier], r] : [r];
   });
 

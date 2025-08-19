@@ -143,10 +143,10 @@ export default function SystemHealth() {
         
         {health?.timestamp && (
           <div className="mt-4 pt-3 border-t text-xs text-muted-foreground">
-            Last updated: {new Date(health.timestamp * 1000).toLocaleString()}
+            Last updated: {new Date(health.timestamp).toLocaleString()}
           </div>
         )}
       </CardContent>
     </Card>
   );
-} 
+}

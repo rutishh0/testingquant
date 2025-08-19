@@ -54,12 +54,25 @@ func main() {
 	}
 
 	// Initialize connector service
-    // Initialize Mesh client (configurable)
-    meshClient := clients.NewMeshClient(cfg.MeshAPIURL)
+    // Initialize Mesh client. If MESH_API_URL points to localhost or is empty,
+    // we will host the Mesh API in-process at /mesh and call it over the
+    // internal loopback.
+    meshBaseURL := cfg.MeshAPIURL
+    if meshBaseURL == "" || meshBaseURL == "http://localhost:8080/mesh" || meshBaseURL == "http://127.0.0.1:8080/mesh" {
+        // Defer exact port to runtime; router will listen on cfg.ServerAddress.
+        // Build a base URL that targets the same process.
+        meshBaseURL = "http://127.0.0.1" + cfg.ServerAddress + "/mesh"
+    }
+    meshClient := clients.NewMeshClient(meshBaseURL)
 
-	// Initialize adapters
-	coinbaseAdapter := coinbase.NewAdapter(coinbaseClient)
-	meshAdapter := mesh.NewAdapter(meshClient)
+    // Initialize adapters
+    var coinbaseAdapter coinbase.Adapter
+    if coinbaseClient != nil {
+        coinbaseAdapter = coinbase.NewAdapter(coinbaseClient)
+    } else {
+        coinbaseAdapter = nil
+    }
+    meshAdapter := mesh.NewAdapter(meshClient)
 
 	// Initialize connector service with all clients
 	connectorService := connector.NewService(coinbaseAdapter, meshAdapter, overledgerClient)

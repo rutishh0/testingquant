@@ -56,9 +56,9 @@ func (m *MockOverledgerClient) TestConnection() error {
 // --- TESTS --- //
 
 func TestNewService(t *testing.T) {
-	coinbaseClient := &clients.CoinbaseClient{}
+	coinbaseClient := clients.NewCoinbaseClient()
 	coinbaseAdapter := coinbase.NewAdapter(coinbaseClient)
-	meshClient := &clients.MeshClient{}
+	meshClient := clients.NewMeshClient("")
 	meshAdapter := mesh.NewAdapter(meshClient)
 	overledgerClient := &overledger.Client{}
 

@@ -65,6 +65,7 @@ type Service interface {
 	CreateCoinbaseTransaction(req *CreateCoinbaseTransactionRequest) (*models.CoinbaseTransaction, error)
 	GetCoinbaseTransaction(transactionID string) (*models.CoinbaseTransaction, error)
 	GetCoinbaseTransactions(walletID string, limit int, cursor string) ([]*models.CoinbaseTransaction, error)
+	GetCoinbaseTransactionsPaginated(walletID string, limit int, cursor string) (*models.CoinbaseTransactionsPaginatedResponse, error)
 	GetCoinbaseAssets() ([]*models.CoinbaseAsset, error)
 	GetCoinbaseNetworks() ([]*models.CoinbaseNetwork, error)
 	// Mesh operations
@@ -156,6 +157,13 @@ func (s *service) GetCoinbaseTransactions(walletID string, limit int, cursor str
 		return nil, errors.New("coinbase adapter not initialized")
 	}
 	return s.coinbaseAdapter.GetTransactions(walletID, limit, cursor)
+}
+
+func (s *service) GetCoinbaseTransactionsPaginated(walletID string, limit int, cursor string) (*models.CoinbaseTransactionsPaginatedResponse, error) {
+	if s.coinbaseAdapter == nil {
+		return nil, errors.New("coinbase adapter not initialized")
+	}
+	return s.coinbaseAdapter.GetTransactionsPaginated(walletID, limit, cursor)
 }
 
 func (s *service) GetCoinbaseAssets() ([]*models.CoinbaseAsset, error) {

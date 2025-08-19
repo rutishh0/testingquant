@@ -1,7 +1,7 @@
 package api
 
 import (
-    "net/http"
+	"net/http"
 	"strings"
 	"time"
 
@@ -12,43 +12,35 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// SetupRouter configures and returns the Gin router
+// SetupRouter configures the Gin router and routes
 func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.Engine {
 	router := gin.Default()
 
-	// CORS middleware for production deployment
-	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-API-Key"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
-	}))
-
-	// API Key middleware
-	router.Use(apiKeyMiddleware(cfg))
+	// Configure CORS to allow frontend to access APIs
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowAllOrigins = true // For development; restrict in production
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "X-API-Key"}
+	router.Use(cors.New(corsConfig))
 
 	// Initialize handlers
 	handlers := NewHandlers(connectorService, cfg)
 
-	// Health and status endpoints
-	router.GET("/health", handlers.Health)
-	router.GET("/status", handlers.Status)
-    // Automated tests endpoint
-    router.GET("/tests", handlers.RunTests)
-	
-	// Serve Next.js web application
-	router.Static("/web", "./web")
-	
-	// Serve the Next.js app at root for production
-	router.GET("/", func(c *gin.Context) {
-		c.File("./web/index.html")
+	// Public endpoints that don't require API key
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":    "ok",
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+			"services":  map[string]interface{}{},
+		})
 	})
-	
-	// Handle Next.js static assets
-	router.Static("/_next", "./web/_next")
-	router.Static("/favicon.ico", "./web/favicon.ico")
+	// Keep status public for simple uptime checks
+	router.GET("/status", handlers.Status)
+	// Tests endpoint can be public in development; protect via API key in production by setting X-API-Key
+	router.GET("/tests", handlers.RunTests)
+
+	// Apply API key middleware to all routes except public ones
+	router.Use(apiKeyMiddleware(cfg))
 
 	// API v1 routes
 	v1 := router.Group("/v1")
@@ -60,17 +52,19 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 			coinbase.GET("/wallets", handlers.GetCoinbaseWallets)
 			coinbase.POST("/wallets", handlers.CreateCoinbaseWallet)
 			coinbase.GET("/wallets/:walletId/balance", handlers.GetCoinbaseWalletBalance)
-			
+
 			// Address operations
 			coinbase.GET("/wallets/:walletId/addresses", handlers.GetCoinbaseWalletAddresses)
 			coinbase.POST("/wallets/:walletId/addresses", handlers.CreateCoinbaseWalletAddress)
-			
+
 			// Transaction operations
 			coinbase.POST("/wallets/:walletId/transactions", handlers.CreateCoinbaseTransaction)
-			coinbase.GET("/wallets/:walletId/transactions", handlers.GetCoinbaseTransactions)
 			coinbase.POST("/wallets/:walletId/transactions/estimate-fee", handlers.EstimateCoinbaseTransactionFee)
+			coinbase.GET("/wallets/:walletId/transactions", handlers.GetCoinbaseTransactions)
+			coinbase.GET("/wallets/:walletId/transactions-paginated", handlers.GetCoinbaseTransactionsPaginated)
+			coinbase.POST("/transactions", handlers.CreateCoinbaseTransaction)
 			coinbase.GET("/transactions/:transactionId", handlers.GetCoinbaseTransaction)
-			
+
 			// General information endpoints
 			coinbase.GET("/assets", handlers.GetCoinbaseAssets)
 			coinbase.GET("/networks", handlers.GetCoinbaseNetworks)
@@ -122,29 +116,18 @@ func apiKeyMiddleware(cfg *config.Config) gin.HandlerFunc {
 		}
 
 		// Skip API key check if not configured (development mode)
-		if cfg.APIKey == "" {
+		apiKey := cfg.APIKey
+		if strings.TrimSpace(apiKey) == "" {
 			c.Next()
 			return
 		}
 
-		apiKey := c.GetHeader("X-API-Key")
-		if apiKey == "" {
-			c.JSON(http.StatusUnauthorized, connector.ErrorResponse{
-				Error:   "missing_api_key",
-				Message: "API key is required. Please provide X-API-Key header.",
-				Code:    401,
+		// Verify API key
+		if c.GetHeader("X-API-Key") != apiKey {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error":   "unauthorized",
+				"message": "Invalid API key",
 			})
-			c.Abort()
-			return
-		}
-
-		if apiKey != cfg.APIKey {
-			c.JSON(http.StatusUnauthorized, connector.ErrorResponse{
-				Error:   "invalid_api_key",
-				Message: "Invalid API key provided.",
-				Code:    401,
-			})
-			c.Abort()
 			return
 		}
 
@@ -152,24 +135,10 @@ func apiKeyMiddleware(cfg *config.Config) gin.HandlerFunc {
 	}
 }
 
-// isPublicPath determines if a path should be accessible without API key
+// isPublicPath checks if the path is public and does not require API key
 func isPublicPath(path string) bool {
-	publicPaths := []string{
-		"/health",
-		"/status", 
-		"/",
-		"/web",
-		"/_next",
-		"/favicon.ico",
-		"/docs",
-        "/tests",
+	if path == "/health" || path == "/status" || path == "/tests" || strings.HasPrefix(path, "/_next/") || strings.HasPrefix(path, "/static/") || path == "/" {
+		return true
 	}
-
-	for _, publicPath := range publicPaths {
-		if path == publicPath || strings.HasPrefix(path, publicPath) {
-			return true
-		}
-	}
-
 	return false
 }

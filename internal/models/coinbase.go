@@ -36,8 +36,16 @@ type CoinbaseBalanceResponse struct {
 
 // CoinbaseAsset represents a single asset
 type CoinbaseAsset struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	AssetID         string `json:"asset_id"`
+	ID              string `json:"id"` // Backward compatibility
+	Name            string `json:"name"`
+	Symbol          string `json:"symbol"`
+	Decimals        int    `json:"decimals"`
+	DisplayName     string `json:"display_name"`
+	AddressFormat   string `json:"address_format"`
+	ExplorerURL     string `json:"explorer_url,omitempty"`
+	ContractAddress string `json:"contract_address,omitempty"`
+	ImageURL        string `json:"image_url,omitempty"`
 }
 
 // CoinbaseAssetsResponse represents the response for a list of assets
@@ -58,6 +66,8 @@ type CoinbaseTransaction struct {
 // CoinbaseTransactionsResponse represents the response for a list of transactions
 type CoinbaseTransactionsResponse struct {
 	Transactions []CoinbaseTransaction `json:"transactions"`
+	NextCursor   string                `json:"next_cursor,omitempty"`
+	HasNext      bool                  `json:"has_next"`
 }
 
 // CoinbaseAddress represents a single address
@@ -85,11 +95,26 @@ type CoinbaseNetworkInfo struct {
 
 // CoinbaseExchangeRates represents the exchange rates for a base currency
 type CoinbaseExchangeRates struct {
-	Base  string             `json:"base"`
+	Base  string            `json:"base"`
 	Rates map[string]string `json:"rates"`
 }
 
 // CoinbaseFeeEstimate represents the estimated fee for a transaction
 type CoinbaseFeeEstimate struct {
 	Fee string `json:"fee"`
+}
+
+// CoinbaseError represents Coinbase API error details
+type CoinbaseError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Details string `json:"details,omitempty"`
+}
+
+// CoinbaseTransactionsPaginatedResponse includes pagination info
+type CoinbaseTransactionsPaginatedResponse struct {
+	Transactions []*CoinbaseTransaction `json:"transactions"`
+	NextCursor   string                 `json:"next_cursor,omitempty"`
+	HasNext      bool                   `json:"has_next"`
+	TotalCount   int                    `json:"total_count,omitempty"`
 }

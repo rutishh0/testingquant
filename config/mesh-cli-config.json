@@ -1,0 +1,55 @@
+{
+  "network": {
+    "blockchain": "Coinbase",
+    "network": "Mainnet"
+  },
+  "online_url": "http://localhost:8080/mesh",
+  "data": {
+    "active_reconciliation_concurrency": 4,
+    "inactive_reconciliation_concurrency": 4,
+    "inactive_reconciliation_frequency": 250,
+    "log_blocks": false,
+    "log_transactions": false,
+    "log_balance_changes": false,
+    "log_reconciliation": false,
+    "ignore_reconciliation_error": false,
+    "exempt_accounts": "config/exempt_accounts.json",
+    "bootstrap_balances": "config/bootstrap_balances.json",
+    "interesting_accounts": "config/interesting_accounts.json",
+    "reconciliation_disabled": false,
+    "inactive_discrepancy_search_disabled": false,
+    "balance_tracking_disabled": false,
+    "coin_tracking_disabled": false,
+    "start_index": 0,
+    "end_index": 1000
+  },
+  "construction": {
+    "offline_url": "http://localhost:8080/mesh",
+    "max_offline_connections": 0,
+    "stale_depth": 3,
+    "broadcast_limit": 3,
+    "ignore_broadcast_failures": false,
+    "clear_broadcasts": false,
+    "broadcast_behind_tip": false,
+    "block_broadcast_limit": 5,
+    "rebroadcast_all": false,
+    "constructor_dsl_file": "",
+    "end_conditions": {
+      "create_account": 10,
+      "transfer": 10
+    },
+    "prefunded_accounts": [
+      {
+        "privkey": "0x8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f",
+        "account_identifier": {
+          "address": "0x742d35Cc6635C0532925a3b8D55C7D1e2F6F7b1F"
+        },
+        "curve_type": "secp256k1",
+        "currency": {
+          "symbol": "ETH",
+          "decimals": 18
+        }
+      }
+    ]
+  }
+}

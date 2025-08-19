@@ -1,9 +1,12 @@
-const API_BASE_URL = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080';
+// Prefer an explicit backend base URL if provided (at build/runtime), otherwise fall back to same origin.
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080');
 
 // API response types
 export interface HealthResponse {
   status: string;
-  timestamp: number;
+  timestamp: string;
   services: Record<string, ServiceHealth>;
 }
 
@@ -62,14 +65,6 @@ export interface TestResult {
   success: boolean;
   message?: string;
   error?: string;
-}
-
-export interface CoinbaseExchangeRatesResponse {
-  data: {
-    currency: string;
-    rates: Record<string, string>;
-    updated_at: string;
-  };
 }
 
 // Utility function for API calls
@@ -199,9 +194,30 @@ const exchange = {
   listProducts: () => apiCall('/v1/exchange/products'),
 };
 
+// Internal helper to normalize the /tests response into TestResult[]
+function normalizeTestResults(input: unknown): TestResult[] {
+  // Case 1: backend returns { tiered: TestResult[], external: any[] }
+  const maybeObj = input as Record<string, unknown> | null;
+  if (maybeObj && typeof maybeObj === 'object') {
+    const tiered = (maybeObj as any).tiered;
+    if (Array.isArray(tiered)) {
+      return tiered as TestResult[];
+    }
+  }
+  // Case 2: backend already returns an array
+  if (Array.isArray(input)) {
+    return input as TestResult[];
+  }
+  // Fallback to empty list
+  return [];
+}
+
 // Test runner API
 const tests = {
-  getResults: () => apiCall<TestResult[]>('/tests'),
+  getResults: async () => {
+    const raw = await apiCall<unknown>('/tests');
+    return normalizeTestResults(raw);
+  },
 };
 
 export const apiClient = {

@@ -16,9 +16,6 @@ PRD.md
 TRD.md
 docs/
 
-# Test files
-*_test.go
-test_api.ps1
 
 # Screenshots and images
 *.png
@@ -26,5 +23,5 @@ test_api.ps1
 *.jpeg
 
 # Local development files
-.env
+
 .env.local
