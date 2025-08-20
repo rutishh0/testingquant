@@ -29,19 +29,26 @@ func NewBlockchainRouter(
 	network *types.NetworkIdentifier,
 	asserter *asserter.Asserter,
 ) http.Handler {
-	networkAPIService := services.NewNetworkAPIService(network)
+    // Initialize Ethereum RPC client from environment (INFURA_RPC_URL or ETH_RPC_URL)
+    rpc, rpcErr := services.NewEthRPCFromEnv()
+    if rpcErr != nil {
+        log.Printf("Mesh RPC not configured or unreachable, using mock fallback: %v", rpcErr)
+        rpc = nil
+    }
+
+	networkAPIService := services.NewNetworkAPIService(network, rpc)
 	networkAPIController := server.NewNetworkAPIController(
 		networkAPIService,
 		asserter,
 	)
 
-	blockAPIService := services.NewBlockAPIService(network)
+	blockAPIService := services.NewBlockAPIService(network, rpc)
 	blockAPIController := server.NewBlockAPIController(
 		blockAPIService,
 		asserter,
 	)
 
-	accountAPIService := services.NewAccountAPIService(network)
+	accountAPIService := services.NewAccountAPIService(network, rpc)
 	accountAPIController := server.NewAccountAPIController(
 		accountAPIService,
 		asserter,

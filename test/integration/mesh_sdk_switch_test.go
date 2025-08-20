@@ -44,9 +44,9 @@ func startMockRosettaServer(t *testing.T) *httptest.Server {
     require.NoError(t, err)
 
     // Underlying mock services remain initialized for Ethereum Sepolia, which is sufficient for our tests
-    networkAPIService := meshservices.NewNetworkAPIService(ethSepolia)
-    blockAPIService := meshservices.NewBlockAPIService(ethSepolia)
-    accountAPIService := meshservices.NewAccountAPIService(ethSepolia)
+    networkAPIService := meshservices.NewNetworkAPIService(ethSepolia, nil)
+    blockAPIService := meshservices.NewBlockAPIService(ethSepolia, nil)
+    accountAPIService := meshservices.NewAccountAPIService(ethSepolia, nil)
 
     networkAPIController := roserver.NewNetworkAPIController(networkAPIService, assr)
     blockAPIController := roserver.NewBlockAPIController(blockAPIService, assr)

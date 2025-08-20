@@ -66,13 +66,20 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 		if err != nil {
 			log.Printf("Failed to initialize Mesh Rosetta asserter: %v", err)
 		} else {
-			networkAPIService := services.NewNetworkAPIService(network)
+            // Initialize RPC client from environment
+-            rpc := services.NewEthRPCFromEnv()
++            rpc, rpcErr := services.NewEthRPCFromEnv()
++            if rpcErr != nil {
++                log.Printf("Mesh RPC not configured or unreachable, using mock fallback: %v", rpcErr)
++                rpc = nil
++            }
+			networkAPIService := services.NewNetworkAPIService(network, rpc)
 			networkAPIController := server.NewNetworkAPIController(networkAPIService, assr)
 
-			blockAPIService := services.NewBlockAPIService(network)
+			blockAPIService := services.NewBlockAPIService(network, rpc)
 			blockAPIController := server.NewBlockAPIController(blockAPIService, assr)
 
-			accountAPIService := services.NewAccountAPIService(network)
+			accountAPIService := services.NewAccountAPIService(network, rpc)
 			accountAPIController := server.NewAccountAPIController(accountAPIService, assr)
 
 			rosettaRouter := server.NewRouter(networkAPIController, blockAPIController, accountAPIController)
