@@ -1,0 +1,973 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>clients: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/rutishh0/testingquant/internal/clients/coinbase.go (0.0%)</option>
+				
+				<option value="file1">github.com/rutishh0/testingquant/internal/clients/exchange.go (0.0%)</option>
+				
+				<option value="file2">github.com/rutishh0/testingquant/internal/clients/mesh.go (77.3%)</option>
+				
+				<option value="file3">github.com/rutishh0/testingquant/internal/clients/mesh_sdk.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">no coverage</span>
+				<span class="cov1">low coverage</span>
+				<span class="cov2">*</span>
+				<span class="cov3">*</span>
+				<span class="cov4">*</span>
+				<span class="cov5">*</span>
+				<span class="cov6">*</span>
+				<span class="cov7">*</span>
+				<span class="cov8">*</span>
+				<span class="cov9">*</span>
+				<span class="cov10">high coverage</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package clients
+
+import (
+        "bytes"
+        "encoding/json"
+        "fmt"
+        "io"
+        "log"
+        "net/http"
+        "os"
+        "strings"
+        "time"
+
+        "github.com/rutishh0/testingquant/internal/utils"
+)
+
+const coinbaseAPIPrefix = ""
+
+type CoinbaseClient struct {
+        BaseURL string
+        Client  *http.Client
+}
+
+// CoinbaseError represents a Coinbase API error response
+type CoinbaseError struct {
+        Code    string `json:"code"`
+        Message string `json:"message"`
+        Details string `json:"details,omitempty"`
+}
+
+// CoinbaseErrorResponse represents the full error response structure
+type CoinbaseErrorResponse struct {
+        Error CoinbaseError `json:"error"`
+}
+
+func NewCoinbaseClient() *CoinbaseClient <span class="cov0" title="0">{
+        return &amp;CoinbaseClient{
+                BaseURL: "https://api.coinbase.com",
+                Client: &amp;http.Client{
+                        Timeout: 30 * time.Second,
+                },
+        }
+}</span>
+
+// DoRequest makes an authenticated request to the Coinbase API
+func (c *CoinbaseClient) DoRequest(method, path string, body interface{}) (*http.Response, error) <span class="cov0" title="0">{
+        // Ensure path starts with /
+        if !strings.HasPrefix(path, "/") </span><span class="cov0" title="0">{
+                path = "/" + path
+        }</span>
+        
+        // Only add /platform prefix if not already present
+        <span class="cov0" title="0">fullPath := path
+        if !strings.HasPrefix(path, coinbaseAPIPrefix) </span><span class="cov0" title="0">{
+                fullPath = coinbaseAPIPrefix + path
+        }</span>
+        
+        <span class="cov0" title="0">var reqBody io.Reader = nil
+        
+        // Marshal request body if provided
+        if body != nil </span><span class="cov0" title="0">{
+                jsonData, err := json.Marshal(body)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("failed to marshal request body: %v", err)
+                }</span>
+                <span class="cov0" title="0">reqBody = bytes.NewBuffer(jsonData)</span>
+        }
+
+        // Create the request
+        <span class="cov0" title="0">req, err := http.NewRequest(method, c.BaseURL+fullPath, reqBody)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to create request: %v", err)
+        }</span>
+
+        // Generate auth headers with the exact path the HTTP request will use (incl. /platform)
+        <span class="cov0" title="0">headers, err := utils.GenerateAuthHeaders(method, fullPath)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to generate auth headers: %v", err)
+        }</span>
+
+        // Set headers
+        <span class="cov0" title="0">for k, v := range headers </span><span class="cov0" title="0">{
+                req.Header.Set(k, v)
+        }</span>
+        
+    // Log request details in development mode
+    <span class="cov0" title="0">if os.Getenv("LOG_LEVEL") == "debug" </span><span class="cov0" title="0">{
+        log.Printf("[Coinbase Request] %s %s", method, c.BaseURL+fullPath)
+        if kid := os.Getenv("COINBASE_API_KEY_ID"); kid != "" </span><span class="cov0" title="0">{
+            log.Printf("[Coinbase Auth] Key ID configured")
+        }</span>
+    }
+
+        // Execute the request
+        <span class="cov0" title="0">resp, err := c.Client.Do(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("request failed: %v", err)
+        }</span>
+
+        // Handle API errors
+        <span class="cov0" title="0">if resp.StatusCode &gt;= 400 </span><span class="cov0" title="0">{
+                defer resp.Body.Close()
+                respBody, _ := io.ReadAll(resp.Body)
+                
+        // Log the error for debugging
+        if os.Getenv("LOG_LEVEL") == "debug" </span><span class="cov0" title="0">{
+            log.Printf("[Coinbase Error] Status: %d, Body: %s", resp.StatusCode, string(respBody))
+        }</span>
+                
+                <span class="cov0" title="0">var errorResp CoinbaseErrorResponse
+                if err := json.Unmarshal(respBody, &amp;errorResp); err == nil &amp;&amp; errorResp.Error.Message != "" </span><span class="cov0" title="0">{
+                        // Check for common auth errors and provide helpful messages
+            if resp.StatusCode == 401 </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("authentication failed (401): %s - %s", 
+                    errorResp.Error.Code, errorResp.Error.Message)
+            }</span>
+                        <span class="cov0" title="0">return nil, fmt.Errorf("Coinbase API error (%d): %s - %s", 
+                                resp.StatusCode, errorResp.Error.Code, errorResp.Error.Message)</span>
+                }
+                <span class="cov0" title="0">return nil, fmt.Errorf("HTTP error: %d - %s", resp.StatusCode, string(respBody))</span>
+        }
+
+        <span class="cov0" title="0">return resp, nil</span>
+}
+
+// Get makes a GET request to the Coinbase API
+func (c *CoinbaseClient) Get(path string) (*http.Response, error) <span class="cov0" title="0">{
+        return c.DoRequest(http.MethodGet, path, nil)
+}</span>
+
+// Post makes a POST request to the Coinbase API
+func (c *CoinbaseClient) Post(path string, body interface{}) (*http.Response, error) <span class="cov0" title="0">{
+        return c.DoRequest(http.MethodPost, path, body)
+}</span>
+
+// Put makes a PUT request to the Coinbase API
+func (c *CoinbaseClient) Put(path string, body interface{}) (*http.Response, error) <span class="cov0" title="0">{
+        return c.DoRequest(http.MethodPut, path, body)
+}</span>
+
+// Delete makes a DELETE request to the Coinbase API
+func (c *CoinbaseClient) Delete(path string) (*http.Response, error) <span class="cov0" title="0">{
+        return c.DoRequest(http.MethodDelete, path, nil)
+}</span>
+
+// Health checks the Coinbase API availability
+func (c *CoinbaseClient) Health() error <span class="cov0" title="0">{
+        // Simple connectivity check - we'll try to get networks which is a lightweight endpoint
+        resp, err := c.Get("/v1/networks?limit=1")
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("Coinbase API health check failed: %v", err)
+        }</span>
+        <span class="cov0" title="0">defer resp.Body.Close()
+        return nil</span>
+}
+
+// GetAssets retrieves available assets for trading
+func (c *CoinbaseClient) GetAssets() (*http.Response, error) <span class="cov0" title="0">{
+    // Try v1 path first
+    resp, err := c.Get("/v1/assets")
+    if err == nil </span><span class="cov0" title="0">{
+        return resp, nil
+    }</span>
+    // If 404, retry without version prefix
+    <span class="cov0" title="0">if strings.Contains(err.Error(), "HTTP error: 404") || strings.Contains(err.Error(), "no matching operation was found") </span><span class="cov0" title="0">{
+        return c.Get("/assets")
+    }</span>
+    <span class="cov0" title="0">return nil, err</span>
+}
+
+// GetNetworks retrieves available networks
+func (c *CoinbaseClient) GetNetworks() (*http.Response, error) <span class="cov0" title="0">{
+    // Coinbase Mesh lists networks via POST /network/list
+    return c.Post("/network/list", map[string]interface{}{})
+}</span>
+
+// GetPortfolio retrieves portfolio information
+func (c *CoinbaseClient) GetPortfolio() (*http.Response, error) <span class="cov0" title="0">{
+        return c.Get("/v1/portfolios")
+}</span>
+
+// GetWallets retrieves wallets
+func (c *CoinbaseClient) GetWallets() (*http.Response, error) <span class="cov0" title="0">{
+        return c.Get("/v1/wallets")
+}</span>
+
+// GetBalances retrieves balances for a specific wallet
+func (c *CoinbaseClient) GetBalances(walletID string) (*http.Response, error) <span class="cov0" title="0">{
+        return c.Get(fmt.Sprintf("/v1/wallets/%s/balances", walletID))
+}</span>
+
+// GetWalletAddresses retrieves addresses for a specific wallet
+func (c *CoinbaseClient) GetWalletAddresses(walletID string) (*http.Response, error) <span class="cov0" title="0">{
+        return c.Get(fmt.Sprintf("/v1/wallets/%s/addresses", walletID))
+}</span>
+
+// CreateWalletAddress creates a new address for a wallet
+func (c *CoinbaseClient) CreateWalletAddress(walletID, name string) (*http.Response, error) <span class="cov0" title="0">{
+        return c.Post(fmt.Sprintf("/v1/wallets/%s/addresses", walletID), map[string]string{"name": name})
+}</span>
+
+// CreateAddress is an alias for CreateWalletAddress to satisfy the Adapter interface
+func (c *CoinbaseClient) CreateAddress(walletID, name string) (*http.Response, error) <span class="cov0" title="0">{
+        return c.CreateWalletAddress(walletID, name)
+}</span>
+
+// GetTransactions retrieves transactions for a wallet
+func (c *CoinbaseClient) GetTransactions(walletID string, limit int, cursor string) (*http.Response, error) <span class="cov0" title="0">{
+        path := fmt.Sprintf("/v1/wallets/%s/transactions", walletID)
+        if limit &gt; 0 || cursor != "" </span><span class="cov0" title="0">{
+                path += "?"
+                if limit &gt; 0 </span><span class="cov0" title="0">{
+                        path += fmt.Sprintf("limit=%d", limit)
+                }</span>
+                <span class="cov0" title="0">if cursor != "" </span><span class="cov0" title="0">{
+                        if limit &gt; 0 </span><span class="cov0" title="0">{
+                                path += "&amp;"
+                        }</span>
+                        <span class="cov0" title="0">path += fmt.Sprintf("cursor=%s", cursor)</span>
+                }
+        }
+        <span class="cov0" title="0">return c.Get(path)</span>
+}
+
+// GetTransaction retrieves a single transaction by ID
+func (c *CoinbaseClient) GetTransaction(transactionID string) (*http.Response, error) <span class="cov0" title="0">{
+        return c.Get(fmt.Sprintf("/v1/transactions/%s", transactionID))
+}</span>
+
+// CreateTransaction creates a new transaction
+func (c *CoinbaseClient) CreateTransaction(to, currency string, amount float64) (*http.Response, error) <span class="cov0" title="0">{
+        body := map[string]interface{}{
+                "to":       to,
+                "currency": currency,
+                "amount":   amount,
+        }
+        return c.Post("/v1/transactions", body)
+}</span>
+
+
+
+// EstimateFee estimates the fee for a transaction
+func (c *CoinbaseClient) EstimateFee(walletID, to, currency string, amount float64) (*http.Response, error) <span class="cov0" title="0">{
+        body := map[string]interface{}{
+                "to":       to,
+                "currency": currency,
+                "amount":   amount,
+        }
+        return c.Post(fmt.Sprintf("/v1/wallets/%s/estimate-fee", walletID), body)
+}</span>
+
+// CreateWallet creates a new wallet
+func (c *CoinbaseClient) CreateWallet(name string) (*http.Response, error) <span class="cov0" title="0">{
+        return c.Post("/v1/wallets", map[string]string{"name": name})
+}</span>
+// GetExchangeRates retrieves current exchange rates
+func (c *CoinbaseClient) GetExchangeRates(baseCurrency string) (*http.Response, error) <span class="cov0" title="0">{
+    path1 := "/v1/exchange-rates"
+    if baseCurrency != "" </span><span class="cov0" title="0">{
+        path1 += "?currency=" + baseCurrency
+    }</span>
+    <span class="cov0" title="0">resp, err := c.Get(path1)
+    if err == nil </span><span class="cov0" title="0">{
+        return resp, nil
+    }</span>
+    <span class="cov0" title="0">path2 := "/exchange-rates"
+    if baseCurrency != "" </span><span class="cov0" title="0">{
+        path2 += "?currency=" + baseCurrency
+    }</span>
+    <span class="cov0" title="0">return c.Get(path2)</span>
+}
+
+// EstimateTransactionFee estimates the fee for a transaction
+func (c *CoinbaseClient) EstimateTransactionFee(walletID string, req interface{}) (*http.Response, error) <span class="cov0" title="0">{
+        return c.Post(fmt.Sprintf("/v1/wallets/%s/transactions/estimate-fee", walletID), req)
+}</span>
+
+// BroadcastTransaction broadcasts a signed transaction
+func (c *CoinbaseClient) BroadcastTransaction(walletID string, req interface{}) (*http.Response, error) <span class="cov0" title="0">{
+        return c.Post(fmt.Sprintf("/v1/wallets/%s/transactions/broadcast", walletID), req)
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package clients
+
+import (
+        "context"
+        "errors"
+        "fmt"
+        "os"
+
+        "github.com/coinbase-samples/core-go"
+        "github.com/coinbase-samples/exchange-sdk-go/accounts"
+        exchclient "github.com/coinbase-samples/exchange-sdk-go/client"
+        "github.com/coinbase-samples/exchange-sdk-go/credentials"
+        "github.com/coinbase-samples/exchange-sdk-go/products"
+)
+
+// ExchangeClient provides a minimal wrapper around the Coinbase Exchange Go SDK
+// exposing only the endpoints we currently need for the Quant Connector backend.
+// Additional endpoints can be added easily as the project grows.
+type ExchangeClient struct {
+        client       exchclient.RestClient
+        noAuthMode   bool // indicates if client is in no-auth mode for read-only operations
+        configStatus string // tracks configuration status for better error reporting
+}
+
+// Configuration error types for clearer distinction
+var (
+        // ErrExchangeNotConfigured indicates that no exchange credentials are set at all.
+        ErrExchangeNotConfigured = errors.New("exchange credentials not configured")
+
+        // ErrExchangeMisconfigured indicates that exchange credentials are provided but invalid/malformed.
+        ErrExchangeMisconfigured = errors.New("exchange credentials are misconfigured")
+
+        // ErrExchangePartialConfig indicates partial credentials are provided (useful for debugging).
+        ErrExchangePartialConfig = errors.New("exchange credentials partially configured")
+
+        // ErrExchangeNoAuthUnsupported indicates that no-auth mode doesn't support the requested operation.
+        ErrExchangeNoAuthUnsupported = errors.New("operation requires authentication but client is in no-auth mode")
+)
+
+// NewExchangeClient initialises a RestClient using credentials from the
+// environment. Preferred source is EXCHANGE_CREDENTIALS – a JSON blob with
+// apiKey, passphrase and signingKey – matching Coinbase's quick-start guide.
+// If that variable is absent or malformed, we fall back to individual vars.
+// Only the API key and signing secret are mandatory – Coinbase's newer UI no
+// longer provides a passphrase, so we treat an empty passphrase as acceptable.
+//
+//        COINBASE_API_KEY, COINBASE_API_PASSPHRASE (optional), COINBASE_API_SECRET
+//
+// Supports an optional NO_AUTH path for read-only operations when
+// EXCHANGE_NO_AUTH=true is set. In no-auth mode, authenticated endpoints will
+// return ErrExchangeNoAuthUnsupported, while public endpoints (e.g., products)
+// may still function if the SDK supports unauthenticated access.
+//
+// Returns ErrExchangeNotConfigured if no credentials are found and no-auth is disabled.
+// Returns ErrExchangeMisconfigured if credentials are provided but invalid.
+func NewExchangeClient() (*ExchangeClient, error) <span class="cov0" title="0">{
+        noAuth := os.Getenv("EXCHANGE_NO_AUTH") == "true"
+
+        creds, err := credentials.ReadEnvCredentials("EXCHANGE_CREDENTIALS")
+        if err != nil </span><span class="cov0" title="0">{
+                // Attempt fallback
+                apiKey := os.Getenv("COINBASE_API_KEY")
+                pass := os.Getenv("COINBASE_API_PASSPHRASE") // may be blank
+                secret := os.Getenv("COINBASE_API_SECRET")
+
+                // Check if any exchange credentials are set at all
+                if apiKey == "" &amp;&amp; secret == "" </span><span class="cov0" title="0">{
+                        if noAuth </span><span class="cov0" title="0">{
+                                // Continue without creds; some endpoints will be unavailable
+                                httpCli, err := core.DefaultHttpClient()
+                                if err != nil </span><span class="cov0" title="0">{
+                                        return nil, fmt.Errorf("%w: failed to create HTTP client: %v", ErrExchangeMisconfigured, err)
+                                }</span>
+                                <span class="cov0" title="0">c := exchclient.NewRestClient(nil, httpCli)
+                                return &amp;ExchangeClient{client: c, noAuthMode: true, configStatus: "no_auth"}, nil</span>
+                        }
+                        <span class="cov0" title="0">return nil, ErrExchangeNotConfigured</span>
+                }
+
+                // If some credentials are set but incomplete, it's misconfigured
+                <span class="cov0" title="0">if apiKey == "" || secret == "" </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("%w: API key and secret are required", ErrExchangeMisconfigured)
+                }</span>
+
+                <span class="cov0" title="0">creds = &amp;credentials.Credentials{
+                        ApiKey:     apiKey,
+                        Passphrase: pass,
+                        SigningKey: secret,
+                }</span>
+        }
+
+        <span class="cov0" title="0">httpCli, err := core.DefaultHttpClient()
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("%w: failed to create HTTP client: %v", ErrExchangeMisconfigured, err)
+        }</span>
+
+        <span class="cov0" title="0">c := exchclient.NewRestClient(creds, httpCli)
+        return &amp;ExchangeClient{client: c, noAuthMode: false, configStatus: "auth"}, nil</span>
+}
+
+// ListAccounts returns the authenticated accounts for the user associated with
+// the provided credentials.
+func (e *ExchangeClient) ListAccounts(ctx context.Context) (*accounts.ListAccountsResponse, error) <span class="cov0" title="0">{
+        if e.noAuthMode </span><span class="cov0" title="0">{
+                return nil, ErrExchangeNoAuthUnsupported
+        }</span>
+        <span class="cov0" title="0">svc := accounts.NewAccountsService(e.client)
+        return svc.ListAccounts(ctx, &amp;accounts.ListAccountsRequest{})</span>
+}
+
+// ListProducts returns all tradeable Exchange products (e.g. BTC-USD).
+func (e *ExchangeClient) ListProducts(ctx context.Context) (*products.ListProductsResponse, error) <span class="cov0" title="0">{
+        svc := products.NewProductsService(e.client)
+        return svc.ListProducts(ctx, &amp;products.ListProductsRequest{})
+}</span>
+
+// GetProduct returns details for a single product.
+func (e *ExchangeClient) GetProduct(ctx context.Context, productID string) (*products.GetProductResponse, error) <span class="cov0" title="0">{
+        svc := products.NewProductsService(e.client)
+        return svc.GetProduct(ctx, &amp;products.GetProductRequest{ProductId: productID})
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package clients
+
+import (
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "io"
+    "net/http"
+    "strings"
+    "time"
+)
+
+// MeshClient is a lightweight HTTP client for interacting with Coinbase Mesh compliant API servers.
+// NOTE: This initial scaffold intentionally avoids introducing the external mesh-sdk-go dependency so the project continues to build offline.
+//       Once the remote module can be fetched, this file can either be removed or refactored to delegate to the official SDK.
+//
+// The Mesh API mostly uses POST requests with a JSON body consisting of `network_identifier`, `block_identifier`, etc. This
+// client provides thin wrappers for common endpoints so the rest of the application can be migrated incrementally.
+
+// MeshAPI abstracts the Mesh client operations used by adapters so implementations can be swapped (e.g., HTTP vs SDK).
+type MeshAPI interface {
+    ListNetworks() (*http.Response, error)
+    NetworkStatus(networkIdentifier interface{}, blockIdentifier interface{}) (*http.Response, error)
+    NetworkOptions(networkIdentifier interface{}) (*http.Response, error)
+    AccountBalance(networkIdentifier, accountIdentifier interface{}) (*http.Response, error)
+    // New: block and transaction retrieval
+    Block(networkIdentifier interface{}, blockIdentifier interface{}) (*http.Response, error)
+    BlockTransaction(networkIdentifier interface{}, blockIdentifier interface{}, transactionIdentifier interface{}) (*http.Response, error)
+    Health() bool
+}
+
+type MeshClient struct {
+    BaseURL string
+    Client  *http.Client
+}
+
+func NewMeshClient(baseURL string) *MeshClient <span class="cov10" title="6">{
+    if baseURL == "" </span><span class="cov0" title="0">{
+        baseURL = "https://mesh.coinbase.com" // Public reference implementation. Replace with appropriate host.
+    }</span>
+    <span class="cov10" title="6">return &amp;MeshClient{
+        BaseURL: strings.TrimSuffix(baseURL, "/"),
+        Client: &amp;http.Client{
+            Timeout: 30 * time.Second,
+        },
+    }</span>
+}
+
+// do executes an HTTP request against the Mesh API. The body value will be JSON encoded when non-nil.
+func (m *MeshClient) do(method, path string, body interface{}) (*http.Response, error) <span class="cov10" title="6">{
+    if !strings.HasPrefix(path, "/") </span><span class="cov0" title="0">{
+        path = "/" + path
+    }</span>
+    <span class="cov10" title="6">var reader io.Reader
+    if body != nil </span><span class="cov10" title="6">{
+        data, err := json.Marshal(body)
+        if err != nil </span><span class="cov1" title="1">{
+            return nil, fmt.Errorf("failed to marshal request body: %w", err)
+        }</span>
+        <span class="cov9" title="5">reader = bytes.NewReader(data)</span>
+    }
+    <span class="cov9" title="5">req, err := http.NewRequest(method, m.BaseURL+path, reader)
+    if err != nil </span><span class="cov0" title="0">{
+        return nil, fmt.Errorf("failed to create request: %w", err)
+    }</span>
+    <span class="cov9" title="5">req.Header.Set("Content-Type", "application/json")
+
+    resp, err := m.Client.Do(req)
+    if err != nil </span><span class="cov0" title="0">{
+        return nil, fmt.Errorf("request failed: %w", err)
+    }</span>
+    <span class="cov9" title="5">if resp.StatusCode &gt;= 400 </span><span class="cov4" title="2">{
+        defer resp.Body.Close()
+        b, _ := io.ReadAll(resp.Body)
+        return nil, fmt.Errorf("mesh API error (%d): %s", resp.StatusCode, string(b))
+    }</span>
+    <span class="cov6" title="3">return resp, nil</span>
+}
+
+// ListNetworks maps to POST /network/list
+func (m *MeshClient) ListNetworks() (*http.Response, error) <span class="cov4" title="2">{
+    return m.do(http.MethodPost, "/network/list", map[string]interface{}{})
+}</span>
+
+// NetworkStatus maps to POST /network/status
+func (m *MeshClient) NetworkStatus(networkIdentifier interface{}, blockIdentifier interface{}) (*http.Response, error) <span class="cov0" title="0">{
+    body := map[string]interface{}{
+        "network_identifier": networkIdentifier,
+    }
+    if blockIdentifier != nil </span><span class="cov0" title="0">{
+        body["block_identifier"] = blockIdentifier
+    }</span>
+    <span class="cov0" title="0">return m.do(http.MethodPost, "/network/status", body)</span>
+}
+
+// NetworkOptions maps to POST /network/options
+func (m *MeshClient) NetworkOptions(networkIdentifier interface{}) (*http.Response, error) <span class="cov1" title="1">{
+    body := map[string]interface{}{
+        "network_identifier": networkIdentifier,
+    }
+    return m.do(http.MethodPost, "/network/options", body)
+}</span>
+
+// AccountBalance maps to POST /account/balance
+func (m *MeshClient) AccountBalance(networkIdentifier, accountIdentifier interface{}) (*http.Response, error) <span class="cov1" title="1">{
+    body := map[string]interface{}{
+        "network_identifier":  networkIdentifier,
+        "account_identifier":  accountIdentifier,
+    }
+    return m.do(http.MethodPost, "/account/balance", body)
+}</span>
+
+// New: Block maps to POST /block
+func (m *MeshClient) Block(networkIdentifier interface{}, blockIdentifier interface{}) (*http.Response, error) <span class="cov1" title="1">{
+    body := map[string]interface{}{
+        "network_identifier": networkIdentifier,
+    }
+    if blockIdentifier == nil </span><span class="cov1" title="1">{
+        body["block_identifier"] = map[string]interface{}{}
+    }</span> else<span class="cov0" title="0"> {
+        body["block_identifier"] = blockIdentifier
+    }</span>
+    <span class="cov1" title="1">return m.do(http.MethodPost, "/block", body)</span>
+}
+
+// New: BlockTransaction maps to POST /block/transaction
+func (m *MeshClient) BlockTransaction(networkIdentifier interface{}, blockIdentifier interface{}, transactionIdentifier interface{}) (*http.Response, error) <span class="cov1" title="1">{
+    body := map[string]interface{}{
+        "network_identifier":     networkIdentifier,
+        "transaction_identifier": transactionIdentifier,
+    }
+    if blockIdentifier == nil </span><span class="cov0" title="0">{
+        body["block_identifier"] = map[string]interface{}{}
+    }</span> else<span class="cov1" title="1"> {
+        body["block_identifier"] = blockIdentifier
+    }</span>
+    <span class="cov1" title="1">return m.do(http.MethodPost, "/block/transaction", body)</span>
+}
+
+// Health checks the health of the mesh client
+func (m *MeshClient) Health() bool <span class="cov4" title="2">{
+    _, err := m.ListNetworks()
+    return err == nil
+}</pre>
+		
+		<pre class="file" id="file3" style="display: none">package clients
+
+import (
+    "bytes"
+    "context"
+    "encoding/json"
+    "fmt"
+    "io"
+    "net/http"
+    "strings"
+
+    roclient "github.com/coinbase/rosetta-sdk-go/client"
+    rotypes "github.com/coinbase/rosetta-sdk-go/types"
+)
+
+// MeshSDKClient implements MeshAPI using the official Rosetta (Mesh) SDK client.
+// It adapts typed SDK responses back into http.Response objects to keep the
+// rest of the code unchanged.
+type MeshSDKClient struct {
+    baseURL   string
+    apiClient *roclient.APIClient
+}
+
+func NewMeshSDKClient(baseURL string) *MeshSDKClient <span class="cov7" title="15">{
+    if baseURL == "" </span><span class="cov1" title="1">{
+        baseURL = "http://localhost:8080/mesh"
+    }</span>
+    // rosetta-sdk-go v0.9.0 NewConfiguration signature: (serverURL, userAgent string, httpClient *http.Client)
+    <span class="cov7" title="15">cfg := roclient.NewConfiguration(strings.TrimSuffix(baseURL, "/"), "", nil)
+    return &amp;MeshSDKClient{
+        baseURL:   strings.TrimSuffix(baseURL, "/"),
+        apiClient: roclient.NewAPIClient(cfg),
+    }</span>
+}
+
+// ListNetworks calls /network/list via SDK and wraps the result into an http.Response
+func (m *MeshSDKClient) ListNetworks() (*http.Response, error) <span class="cov5" title="6">{
+    ctx := context.Background()
+    // MetadataRequest is empty for /network/list
+    resp, _, err := m.apiClient.NetworkAPI.NetworkList(ctx, &amp;rotypes.MetadataRequest{})
+    if err != nil </span><span class="cov4" title="4">{
+        return nil, err
+    }</span>
+    <span class="cov2" title="2">return wrapJSONResponse(resp)</span>
+}
+
+// NetworkStatus calls /network/status via SDK and wraps the result
+func (m *MeshSDKClient) NetworkStatus(networkIdentifier interface{}, blockIdentifier interface{}) (*http.Response, error) <span class="cov5" title="5">{ // blockIdentifier ignored (not in request schema)
+    ctx := context.Background()
+    ni, err := toNetworkIdentifier(networkIdentifier)
+    if err != nil </span><span class="cov1" title="1">{
+        return nil, err
+    }</span>
+    <span class="cov4" title="4">req := &amp;rotypes.NetworkRequest{NetworkIdentifier: ni}
+    resp, _, err := m.apiClient.NetworkAPI.NetworkStatus(ctx, req)
+    if err != nil </span><span class="cov2" title="2">{
+        return nil, err
+    }</span>
+    <span class="cov2" title="2">return wrapJSONResponse(resp)</span>
+}
+
+// NetworkOptions calls /network/options via SDK and wraps the result
+func (m *MeshSDKClient) NetworkOptions(networkIdentifier interface{}) (*http.Response, error) <span class="cov4" title="4">{
+    ctx := context.Background()
+    ni, err := toNetworkIdentifier(networkIdentifier)
+    if err != nil </span><span class="cov1" title="1">{
+        return nil, err
+    }</span>
+    <span class="cov3" title="3">req := &amp;rotypes.NetworkRequest{NetworkIdentifier: ni}
+    resp, _, err := m.apiClient.NetworkAPI.NetworkOptions(ctx, req)
+    if err != nil </span><span class="cov2" title="2">{
+        return nil, err
+    }</span>
+    <span class="cov1" title="1">return wrapJSONResponse(resp)</span>
+}
+
+// AccountBalance calls /account/balance via SDK and wraps the result
+func (m *MeshSDKClient) AccountBalance(networkIdentifier, accountIdentifier interface{}) (*http.Response, error) <span class="cov5" title="6">{
+    ctx := context.Background()
+    ni, err := toNetworkIdentifier(networkIdentifier)
+    if err != nil </span><span class="cov1" title="1">{
+        return nil, err
+    }</span>
+    <span class="cov5" title="5">ai, err := toAccountIdentifier(accountIdentifier)
+    if err != nil </span><span class="cov1" title="1">{
+        return nil, err
+    }</span>
+    <span class="cov4" title="4">req := &amp;rotypes.AccountBalanceRequest{
+        NetworkIdentifier: ni,
+        AccountIdentifier: ai,
+    }
+    resp, _, err := m.apiClient.AccountAPI.AccountBalance(ctx, req)
+    if err != nil </span><span class="cov2" title="2">{
+        return nil, err
+    }</span>
+    <span class="cov2" title="2">return wrapJSONResponse(resp)</span>
+}
+
+// Block calls /block via SDK and wraps the result
+func (m *MeshSDKClient) Block(networkIdentifier interface{}, blockIdentifier interface{}) (*http.Response, error) <span class="cov5" title="6">{
+    ctx := context.Background()
+    ni, err := toNetworkIdentifier(networkIdentifier)
+    if err != nil </span><span class="cov1" title="1">{
+        return nil, err
+    }</span>
+    <span class="cov5" title="5">pbi, err := toPartialBlockIdentifier(blockIdentifier)
+    if err != nil </span><span class="cov1" title="1">{
+        return nil, err
+    }</span>
+    <span class="cov4" title="4">req := &amp;rotypes.BlockRequest{
+        NetworkIdentifier: ni,
+        BlockIdentifier:   pbi,
+    }
+    resp, _, err := m.apiClient.BlockAPI.Block(ctx, req)
+    if err != nil </span><span class="cov2" title="2">{
+        return nil, err
+    }</span>
+    <span class="cov2" title="2">return wrapJSONResponse(resp)</span>
+}
+
+// BlockTransaction calls /block/transaction via SDK and wraps the result
+func (m *MeshSDKClient) BlockTransaction(networkIdentifier interface{}, blockIdentifier interface{}, transactionIdentifier interface{}) (*http.Response, error) <span class="cov6" title="9">{
+    ctx := context.Background()
+    ni, err := toNetworkIdentifier(networkIdentifier)
+    if err != nil </span><span class="cov1" title="1">{
+        return nil, err
+    }</span>
+    <span class="cov6" title="8">bi, err := toFullBlockIdentifier(blockIdentifier)
+    if err != nil </span><span class="cov3" title="3">{
+        return nil, err
+    }</span>
+    <span class="cov5" title="5">ti, err := toTransactionIdentifier(transactionIdentifier)
+    if err != nil </span><span class="cov2" title="2">{
+        return nil, err
+    }</span>
+    <span class="cov3" title="3">req := &amp;rotypes.BlockTransactionRequest{
+        NetworkIdentifier:     ni,
+        BlockIdentifier:       bi,
+        TransactionIdentifier: ti,
+    }
+    resp, _, err := m.apiClient.BlockAPI.BlockTransaction(ctx, req)
+    if err != nil </span><span class="cov2" title="2">{
+        return nil, err
+    }</span>
+    <span class="cov1" title="1">return wrapJSONResponse(resp)</span>
+}
+
+// Health checks the Mesh network list via SDK
+func (m *MeshSDKClient) Health() bool <span class="cov3" title="3">{
+    if _, err := m.ListNetworks(); err != nil </span><span class="cov2" title="2">{
+        return false
+    }</span>
+    <span class="cov1" title="1">return true</span>
+}
+
+// Helpers
+
+func wrapJSONResponse(v interface{}) (*http.Response, error) <span class="cov7" title="12">{
+    b, err := json.Marshal(v)
+    if err != nil </span><span class="cov1" title="1">{
+        return nil, fmt.Errorf("failed to marshal response: %w", err)
+    }</span>
+    <span class="cov7" title="11">r := &amp;http.Response{
+        Status:     "200 OK",
+        StatusCode: 200,
+        Header:     make(http.Header),
+        Body:       io.NopCloser(bytes.NewReader(b)),
+    }
+    r.Header.Set("Content-Type", "application/json")
+    return r, nil</span>
+}
+
+func toNetworkIdentifier(v interface{}) (*rotypes.NetworkIdentifier, error) <span class="cov10" title="36">{
+    switch t := v.(type) </span>{
+    case *rotypes.NetworkIdentifier:<span class="cov2" title="2">
+        return t, nil</span>
+    case rotypes.NetworkIdentifier:<span class="cov1" title="1">
+        return &amp;t, nil</span>
+    case map[string]interface{}:<span class="cov9" title="27">
+        blockchain, _ := t["blockchain"].(string)
+        network, _ := t["network"].(string)
+        if blockchain == "" || network == "" </span><span class="cov2" title="2">{
+            return nil, fmt.Errorf("invalid network_identifier map: missing fields")
+        }</span>
+        <span class="cov9" title="25">return &amp;rotypes.NetworkIdentifier{Blockchain: blockchain, Network: network}, nil</span>
+    default:<span class="cov5" title="6">
+        return nil, fmt.Errorf("unsupported network_identifier type: %T", v)</span>
+    }
+}
+
+func toAccountIdentifier(v interface{}) (*rotypes.AccountIdentifier, error) <span class="cov6" title="10">{
+    switch t := v.(type) </span>{
+    case *rotypes.AccountIdentifier:<span class="cov2" title="2">
+        return t, nil</span>
+    case rotypes.AccountIdentifier:<span class="cov1" title="1">
+        return &amp;t, nil</span>
+    case map[string]interface{}:<span class="cov5" title="5">
+        address, _ := t["address"].(string)
+        if address == "" </span><span class="cov1" title="1">{
+            return nil, fmt.Errorf("invalid account_identifier map: missing address")
+        }</span>
+        <span class="cov4" title="4">return &amp;rotypes.AccountIdentifier{Address: address}, nil</span>
+    default:<span class="cov2" title="2">
+        return nil, fmt.Errorf("unsupported account_identifier type: %T", v)</span>
+    }
+}
+
+// Converts input to PartialBlockIdentifier for /block
+func toPartialBlockIdentifier(v interface{}) (*rotypes.PartialBlockIdentifier, error) <span class="cov7" title="16">{
+    switch t := v.(type) </span>{
+    case nil:<span class="cov2" title="2">
+        return &amp;rotypes.PartialBlockIdentifier{}, nil</span>
+    case *rotypes.PartialBlockIdentifier:<span class="cov1" title="1">
+        return t, nil</span>
+    case rotypes.PartialBlockIdentifier:<span class="cov1" title="1">
+        return &amp;t, nil</span>
+    case map[string]interface{}:<span class="cov6" title="9">
+        var (
+            idxPtr *int64
+            hashStr string
+        )
+        if raw, ok := t["index"]; ok </span><span class="cov5" title="7">{
+            switch n := raw.(type) </span>{
+            case float64:<span class="cov1" title="1">
+                v := int64(n)
+                idxPtr = &amp;v</span>
+            case int64:<span class="cov1" title="1">
+                v := n
+                idxPtr = &amp;v</span>
+            case int:<span class="cov5" title="5">
+                v := int64(n)
+                idxPtr = &amp;v</span>
+            }
+        }
+        <span class="cov6" title="9">if h, ok := t["hash"].(string); ok </span><span class="cov2" title="2">{
+            hashStr = h
+        }</span>
+        <span class="cov6" title="9">pbi := &amp;rotypes.PartialBlockIdentifier{}
+        if idxPtr != nil </span><span class="cov5" title="7">{
+            pbi.Index = idxPtr
+        }</span>
+        <span class="cov6" title="9">if hashStr != "" </span><span class="cov2" title="2">{
+            pbi.Hash = &amp;hashStr
+        }</span>
+        <span class="cov6" title="9">return pbi, nil</span>
+    default:<span class="cov3" title="3">
+        return nil, fmt.Errorf("unsupported block_identifier type for /block: %T", v)</span>
+    }
+}
+
+// Converts input to BlockIdentifier for /block/transaction
+func toFullBlockIdentifier(v interface{}) (*rotypes.BlockIdentifier, error) <span class="cov8" title="20">{
+    switch t := v.(type) </span>{
+    case *rotypes.BlockIdentifier:<span class="cov1" title="1">
+        return t, nil</span>
+    case rotypes.BlockIdentifier:<span class="cov1" title="1">
+        return &amp;t, nil</span>
+    case map[string]interface{}:<span class="cov7" title="15">
+        var (
+            idx int64
+            hasIdx bool
+            hash string
+        )
+        if raw, ok := t["index"]; ok </span><span class="cov7" title="11">{
+            switch n := raw.(type) </span>{
+            case float64:<span class="cov1" title="1">
+                idx = int64(n)
+                hasIdx = true</span>
+            case int64:<span class="cov1" title="1">
+                idx = n
+                hasIdx = true</span>
+            case int:<span class="cov5" title="7">
+                idx = int64(n)
+                hasIdx = true</span>
+            }
+        }
+        <span class="cov7" title="15">if h, ok := t["hash"].(string); ok </span><span class="cov2" title="2">{
+            hash = h
+        }</span>
+        // If neither provided, return empty identifier error
+        <span class="cov7" title="15">if !hasIdx &amp;&amp; hash == "" </span><span class="cov5" title="5">{
+            return nil, fmt.Errorf("invalid block_identifier map: require index and/or hash")
+        }</span>
+        <span class="cov6" title="10">return &amp;rotypes.BlockIdentifier{Index: idx, Hash: hash}, nil</span>
+    default:<span class="cov3" title="3">
+        return nil, fmt.Errorf("unsupported block_identifier type for /block/transaction: %T", v)</span>
+    }
+}
+
+func toTransactionIdentifier(v interface{}) (*rotypes.TransactionIdentifier, error) <span class="cov7" title="12">{
+    switch t := v.(type) </span>{
+    case *rotypes.TransactionIdentifier:<span class="cov1" title="1">
+        return t, nil</span>
+    case rotypes.TransactionIdentifier:<span class="cov1" title="1">
+        return &amp;t, nil</span>
+    case map[string]interface{}:<span class="cov5" title="7">
+        hash, _ := t["hash"].(string)
+        if hash == "" </span><span class="cov3" title="3">{
+            return nil, fmt.Errorf("invalid transaction_identifier map: missing hash")
+        }</span>
+        <span class="cov4" title="4">return &amp;rotypes.TransactionIdentifier{Hash: hash}, nil</span>
+    default:<span class="cov3" title="3">
+        return nil, fmt.Errorf("unsupported transaction_identifier type: %T", v)</span>
+    }
+}</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

@@ -147,6 +147,9 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 		{
 			mesh.GET("/networks", handlers.GetMeshNetworks)
 			mesh.POST("/account/balance", handlers.GetMeshAccountBalance)
+			// New: block and transaction retrieval
+			mesh.POST("/block", handlers.GetMeshBlock)
+			mesh.POST("/block/transaction", handlers.GetMeshBlockTransaction)
 		}
 	}
 

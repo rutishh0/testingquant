@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { 
   Wallet, 
@@ -32,6 +31,7 @@ import TestingLogs from "@/components/testing-logs";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
+import Link from "next/link";
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -247,6 +247,31 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <TestingLogs />
+            </CardContent>
+          </Card>
+
+          {/* Code Coverage quick access */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Shield className="w-5 h-5" />
+                <span>Code Coverage</span>
+              </CardTitle>
+              <CardDescription>
+                internal/clients coverage summary and interactive report
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-3xl font-bold">57.4%</div>
+                  <p className="text-sm text-muted-foreground">Overall coverage</p>
+                </div>
+                <Link href="/coverage" className="inline-flex items-center px-3 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-90">
+                  Open Report
+                  <ExternalLink className="w-4 h-4 ml-2" />
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </section>

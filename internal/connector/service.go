@@ -71,6 +71,9 @@ type Service interface {
 	// Mesh operations
 	GetMeshNetworks() (*models.MeshNetworksResponse, error)
 	GetMeshNetworkBalance(networkIdentifier, accountIdentifier interface{}) (*models.MeshBalanceResponse, error)
+	// New Mesh methods for blocks and transactions
+	GetMeshBlock(networkIdentifier, blockIdentifier interface{}) (map[string]interface{}, error)
+	GetMeshBlockTransaction(networkIdentifier, blockIdentifier, transactionIdentifier interface{}) (map[string]interface{}, error)
 	GetCoinbaseExchangeRates(baseCurrency string) (*models.CoinbaseExchangeRates, error)
 	EstimateCoinbaseTransactionFee(walletID string, req *EstimateFeeRequest) (*models.CoinbaseFeeEstimate, error)
 	
@@ -219,6 +222,22 @@ func (s *service) GetMeshNetworkBalance(networkIdentifier, accountIdentifier int
 	return s.meshAdapter.AccountBalance(networkIdentifier, accountIdentifier)
 }
 
+// New: GetMeshBlock retrieves a block by identifier on a specified network
+func (s *service) GetMeshBlock(networkIdentifier, blockIdentifier interface{}) (map[string]interface{}, error) {
+	if s.meshAdapter == nil {
+		return nil, errors.New("mesh adapter not initialized")
+	}
+	return s.meshAdapter.Block(networkIdentifier, blockIdentifier)
+}
+
+// New: GetMeshBlockTransaction retrieves a transaction by identifier within a block on a specified network
+func (s *service) GetMeshBlockTransaction(networkIdentifier, blockIdentifier, transactionIdentifier interface{}) (map[string]interface{}, error) {
+	if s.meshAdapter == nil {
+		return nil, errors.New("mesh adapter not initialized")
+	}
+	return s.meshAdapter.BlockTransaction(networkIdentifier, blockIdentifier, transactionIdentifier)
+}
+
 func (s *service) GetOverledgerBalance(networkID, address string) (*overledger.BalanceResponse, error) {
 	if s.overledgerClient == nil {
 		return nil, errors.New("overledger client not initialized")
@@ -258,66 +277,41 @@ func (s *service) HealthCheck() (*HealthResponse, error) {
 
 	// Check Coinbase health
 	if s.coinbaseAdapter != nil {
-		if !s.coinbaseAdapter.Health() {
-			health.Services["coinbase"] = ServiceHealth{
-				Status:  "unhealthy",
-				Message: "Coinbase API is not accessible",
-			}
-			health.Status = "degraded"
-		} else {
-			health.Services["coinbase"] = ServiceHealth{
-				Status:  "healthy",
-				Message: "Coinbase API is accessible",
-			}
+		coinbaseHealthy := "healthy"
+		coinbaseMsg := ""
+		if _, err := s.coinbaseAdapter.GetWallets(); err != nil {
+			coinbaseHealthy = "unhealthy"
+			coinbaseMsg = err.Error()
 		}
+		health.Services["coinbase"] = ServiceHealth{Status: coinbaseHealthy, Message: coinbaseMsg}
 	} else {
-		health.Services["coinbase"] = ServiceHealth{
-			Status:  "disabled",
-			Message: "Coinbase client not configured (missing credentials)",
+		health.Services["coinbase"] = ServiceHealth{Status: "uninitialized"}
+	}
+
+	// Check Mesh health
+	if s.meshAdapter != nil {
+		meshHealthy := "healthy"
+		meshMsg := ""
+		if _, err := s.meshAdapter.ListNetworks(); err != nil {
+			meshHealthy = "unhealthy"
+			meshMsg = err.Error()
 		}
+		health.Services["mesh"] = ServiceHealth{Status: meshHealthy, Message: meshMsg}
+	} else {
+		health.Services["mesh"] = ServiceHealth{Status: "uninitialized"}
 	}
 
 	// Check Overledger health
 	if s.overledgerClient != nil {
-		if err := s.overledgerClient.TestConnection(); err != nil {
-			health.Services["overledger"] = ServiceHealth{
-				Status:  "unhealthy",
-				Message: err.Error(),
-			}
-			health.Status = "degraded"
-		} else {
-			health.Services["overledger"] = ServiceHealth{
-				Status:  "healthy",
-				Message: "Overledger API is accessible",
-			}
+		overledgerHealthy := "healthy"
+		overledgerMsg := ""
+		if _, err := s.overledgerClient.GetNetworks(); err != nil {
+			overledgerHealthy = "unhealthy"
+			overledgerMsg = err.Error()
 		}
+		health.Services["overledger"] = ServiceHealth{Status: overledgerHealthy, Message: overledgerMsg}
 	} else {
-		health.Services["overledger"] = ServiceHealth{
-			Status:  "disabled",
-			Message: "Overledger client not configured (missing credentials)",
-		}
-	}
-
-	// If both services are disabled or unhealthy, mark overall status appropriately
-	allDisabled := true
-	anyHealthy := false
-	for _, service := range health.Services {
-		if service.Status != "disabled" {
-			allDisabled = false
-		}
-		if service.Status == "healthy" {
-			anyHealthy = true
-		}
-	}
-
-	if allDisabled {
-		health.Status = "degraded"
-		health.Message = "No services configured - please set API credentials"
-	} else if !anyHealthy && health.Status == "degraded" {
-		health.Message = "Some services are experiencing issues"
-	} else if anyHealthy {
-		health.Status = "healthy"
-		health.Message = "Service is operational"
+		health.Services["overledger"] = ServiceHealth{Status: "uninitialized"}
 	}
 
 	return health, nil

@@ -35,9 +35,24 @@ func NewIntegrationTestSuite() *IntegrationTestSuite {
 	}
 }
 
+// serverReachable quickly checks if the connector server is available; if not, tests depending on it will be skipped.
+func serverReachable(baseURL string) bool {
+	client := &http.Client{Timeout: 1500 * time.Millisecond}
+	resp, err := client.Get(baseURL + "/health")
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	return true
+}
+
 // TestHealthEndpoint verifies the health check endpoint
 func TestHealthEndpoint(t *testing.T) {
 	suite := NewIntegrationTestSuite()
+	// Skip if no live connector server is available at baseURL
+	if !serverReachable(suite.baseURL) {
+		t.Skipf("Skipping live connector tests: server not running at %s", suite.baseURL)
+	}
 	
 	resp, err := suite.get("/health")
 	require.NoError(t, err)
@@ -150,6 +165,10 @@ func TestOverledgerIntegration(t *testing.T) {
 // TestMeshProxyIntegration tests the Mesh API proxy
 func TestMeshProxyIntegration(t *testing.T) {
 	suite := NewIntegrationTestSuite()
+	// Skip if no live connector server is available at baseURL
+	if !serverReachable(suite.baseURL) {
+		t.Skipf("Skipping live connector tests: server not running at %s", suite.baseURL)
+	}
 	
 	t.Run("NetworkList", func(t *testing.T) {
 		payload := map[string]interface{}{}

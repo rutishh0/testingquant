@@ -63,7 +63,15 @@ func main() {
         // Build a base URL that targets the same process.
         meshBaseURL = "http://127.0.0.1" + cfg.ServerAddress + "/mesh"
     }
-    meshClient := clients.NewMeshClient(meshBaseURL)
+
+    var meshAPI clients.MeshAPI
+    if cfg.MeshUseSDK {
+        log.Printf("Mesh client: SDK mode enabled (MESH_USE_SDK=true), baseURL=%s", meshBaseURL)
+        meshAPI = clients.NewMeshSDKClient(meshBaseURL)
+    } else {
+        log.Printf("Mesh client: HTTP mode (default), baseURL=%s", meshBaseURL)
+        meshAPI = clients.NewMeshClient(meshBaseURL)
+    }
 
     // Initialize adapters
     var coinbaseAdapter coinbase.Adapter
@@ -72,7 +80,7 @@ func main() {
     } else {
         coinbaseAdapter = nil
     }
-    meshAdapter := mesh.NewAdapter(meshClient)
+    meshAdapter := mesh.NewAdapter(meshAPI)
 
 	// Initialize connector service with all clients
 	connectorService := connector.NewService(coinbaseAdapter, meshAdapter, overledgerClient)

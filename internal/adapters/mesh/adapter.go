@@ -10,15 +10,18 @@ import (
 type Adapter interface {
 	ListNetworks() (*models.MeshNetworksResponse, error)
 	AccountBalance(networkIdentifier, accountIdentifier interface{}) (*models.MeshBalanceResponse, error)
+	// New: block and transaction retrieval
+	Block(networkIdentifier, blockIdentifier interface{}) (map[string]interface{}, error)
+	BlockTransaction(networkIdentifier, blockIdentifier, transactionIdentifier interface{}) (map[string]interface{}, error)
 	Health() bool
 }
 
 type meshAdapter struct {
-    client *clients.MeshClient
+    client clients.MeshAPI
 }
 
 // NewAdapter creates a new mesh adapter
-func NewAdapter(client *clients.MeshClient) Adapter {
+func NewAdapter(client clients.MeshAPI) Adapter {
     return &meshAdapter{client: client}
 }
 
@@ -66,6 +69,36 @@ func (a *meshAdapter) AccountBalance(networkIdentifier, accountIdentifier interf
 		return nil, err
 	}
 	return &balance, nil
+}
+
+// Block returns the Rosetta BlockResponse as a generic map to keep adapter layer decoupled from SDK types
+func (a *meshAdapter) Block(networkIdentifier, blockIdentifier interface{}) (map[string]interface{}, error) {
+	resp, err := a.client.Block(networkIdentifier, blockIdentifier)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var out map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// BlockTransaction returns the Rosetta BlockTransactionResponse as a generic map
+func (a *meshAdapter) BlockTransaction(networkIdentifier, blockIdentifier, transactionIdentifier interface{}) (map[string]interface{}, error) {
+	resp, err := a.client.BlockTransaction(networkIdentifier, blockIdentifier, transactionIdentifier)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var out map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (a *meshAdapter) Health() bool {

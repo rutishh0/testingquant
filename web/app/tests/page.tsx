@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { apiClient, type TestResult } from "@/components/api-client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,7 @@ export default function TestsPage() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const fetchResults = async () => {
+  const fetchResults = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -23,13 +23,13 @@ export default function TestsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchResults();
     const id = setInterval(fetchResults, 30000);
     return () => clearInterval(id);
-  }, []);
+  }, [fetchResults]);
 
   const grouped = useMemo(() => {
     const g: Record<number, TestResult[]> = {};

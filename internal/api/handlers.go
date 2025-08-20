@@ -758,3 +758,58 @@ func (h *Handlers) GetMeshAccountBalance(c *gin.Context) {
     }
     c.JSON(http.StatusOK, balance)
 }
+
+// GetMeshBlock handles POST /v1/mesh/block
+func (h *Handlers) GetMeshBlock(c *gin.Context) {
+    var req struct {
+        NetworkIdentifier interface{} `json:"network_identifier"`
+        BlockIdentifier   interface{} `json:"block_identifier"`
+    }
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, connector.ErrorResponse{
+            Error:   "invalid_request",
+            Message: err.Error(),
+            Code:    400,
+        })
+        return
+    }
+
+    block, err := h.connectorService.GetMeshBlock(req.NetworkIdentifier, req.BlockIdentifier)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
+            Error:   "mesh_block_failed",
+            Message: err.Error(),
+            Code:    500,
+        })
+        return
+    }
+    c.JSON(http.StatusOK, block)
+}
+
+// GetMeshBlockTransaction handles POST /v1/mesh/block/transaction
+func (h *Handlers) GetMeshBlockTransaction(c *gin.Context) {
+    var req struct {
+        NetworkIdentifier     interface{} `json:"network_identifier"`
+        BlockIdentifier       interface{} `json:"block_identifier"`
+        TransactionIdentifier interface{} `json:"transaction_identifier"`
+    }
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, connector.ErrorResponse{
+            Error:   "invalid_request",
+            Message: err.Error(),
+            Code:    400,
+        })
+        return
+    }
+
+    tx, err := h.connectorService.GetMeshBlockTransaction(req.NetworkIdentifier, req.BlockIdentifier, req.TransactionIdentifier)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, connector.ErrorResponse{
+            Error:   "mesh_block_transaction_failed",
+            Message: err.Error(),
+            Code:    500,
+        })
+        return
+    }
+    c.JSON(http.StatusOK, tx)
+}

@@ -17,6 +17,18 @@ import (
 // The Mesh API mostly uses POST requests with a JSON body consisting of `network_identifier`, `block_identifier`, etc. This
 // client provides thin wrappers for common endpoints so the rest of the application can be migrated incrementally.
 
+// MeshAPI abstracts the Mesh client operations used by adapters so implementations can be swapped (e.g., HTTP vs SDK).
+type MeshAPI interface {
+    ListNetworks() (*http.Response, error)
+    NetworkStatus(networkIdentifier interface{}, blockIdentifier interface{}) (*http.Response, error)
+    NetworkOptions(networkIdentifier interface{}) (*http.Response, error)
+    AccountBalance(networkIdentifier, accountIdentifier interface{}) (*http.Response, error)
+    // New: block and transaction retrieval
+    Block(networkIdentifier interface{}, blockIdentifier interface{}) (*http.Response, error)
+    BlockTransaction(networkIdentifier interface{}, blockIdentifier interface{}, transactionIdentifier interface{}) (*http.Response, error)
+    Health() bool
+}
+
 type MeshClient struct {
     BaseURL string
     Client  *http.Client
@@ -98,8 +110,35 @@ func (m *MeshClient) AccountBalance(networkIdentifier, accountIdentifier interfa
     return m.do(http.MethodPost, "/account/balance", body)
 }
 
+// New: Block maps to POST /block
+func (m *MeshClient) Block(networkIdentifier interface{}, blockIdentifier interface{}) (*http.Response, error) {
+    body := map[string]interface{}{
+        "network_identifier": networkIdentifier,
+    }
+    if blockIdentifier == nil {
+        body["block_identifier"] = map[string]interface{}{}
+    } else {
+        body["block_identifier"] = blockIdentifier
+    }
+    return m.do(http.MethodPost, "/block", body)
+}
+
+// New: BlockTransaction maps to POST /block/transaction
+func (m *MeshClient) BlockTransaction(networkIdentifier interface{}, blockIdentifier interface{}, transactionIdentifier interface{}) (*http.Response, error) {
+    body := map[string]interface{}{
+        "network_identifier":     networkIdentifier,
+        "transaction_identifier": transactionIdentifier,
+    }
+    if blockIdentifier == nil {
+        body["block_identifier"] = map[string]interface{}{}
+    } else {
+        body["block_identifier"] = blockIdentifier
+    }
+    return m.do(http.MethodPost, "/block/transaction", body)
+}
+
 // Health checks the health of the mesh client
 func (m *MeshClient) Health() bool {
-	_, err := m.ListNetworks()
-	return err == nil
+    _, err := m.ListNetworks()
+    return err == nil
 }

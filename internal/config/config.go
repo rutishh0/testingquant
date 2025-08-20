@@ -3,6 +3,7 @@ package config
 import (
     "os"
     "strconv"
+    "strings"
 )
 
 // Config holds the application configuration
@@ -19,6 +20,7 @@ type Config struct {
 
     // Mesh API Configuration
     MeshAPIURL string
+    MeshUseSDK bool
 
 	// Overledger OAuth2 Configuration
 	OverledgerClientID     string
@@ -61,6 +63,7 @@ func LoadConfig() *Config {
 
         // Mesh API Configuration
         MeshAPIURL:        getEnv("MESH_API_URL", "http://localhost:8080/mesh"),
+        MeshUseSDK:        strings.EqualFold(getEnv("MESH_USE_SDK", "false"), "true"),
 
 		// Overledger OAuth2 Configuration - NO HARDCODED CREDENTIALS
 		OverledgerClientID:     getEnv("OVERLEDGER_CLIENT_ID", ""),

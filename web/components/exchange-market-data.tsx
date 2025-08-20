@@ -79,7 +79,7 @@ export default function ExchangeMarketData() {
     return () => {
       mountedRef.current = false;
     };
-  }, []);
+  }, [selectedProduct]);
 
   // Manage WebSocket connection when selected product changes
   useEffect(() => {
