@@ -13,6 +13,9 @@ import (
     "time"
 )
 
+// Default hardcoded Infura Sepolia endpoint (replace YOUR_INFURA_PROJECT_ID or set ENV vars)
+const defaultInfuraSepoliaURL = "https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID"
+
 type rpcError struct {
     Code    int    `json:"code"`
     Message string `json:"message"`
@@ -42,8 +45,10 @@ func NewEthRPCFromEnv() (*EthRPCClient, error) {
     if url == "" {
         url = os.Getenv("ETH_RPC_URL")
     }
+    // If not provided via ENV, fall back to a hardcoded Sepolia endpoint placeholder
     if url == "" {
-        return nil, errors.New("INFURA_RPC_URL or ETH_RPC_URL must be set for live Mesh Rosetta data")
+        url = defaultInfuraSepoliaURL
+        // Note: This is a placeholder. Replace YOUR_INFURA_PROJECT_ID or set ENV vars.
     }
     return &EthRPCClient{
         URL: url,

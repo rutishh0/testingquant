@@ -67,30 +67,29 @@ func SetupRouter(connectorService connector.Service, cfg *config.Config) *gin.En
 			log.Printf("Failed to initialize Mesh Rosetta asserter: %v", err)
 		} else {
             // Initialize RPC client from environment
--            rpc := services.NewEthRPCFromEnv()
-+            rpc, rpcErr := services.NewEthRPCFromEnv()
-+            if rpcErr != nil {
-+                log.Printf("Mesh RPC not configured or unreachable, using mock fallback: %v", rpcErr)
-+                rpc = nil
-+            }
-			networkAPIService := services.NewNetworkAPIService(network, rpc)
-			networkAPIController := server.NewNetworkAPIController(networkAPIService, assr)
+            rpc, rpcErr := services.NewEthRPCFromEnv()
+            if rpcErr != nil {
+                log.Printf("Mesh RPC not configured or unreachable, using mock fallback: %v", rpcErr)
+                rpc = nil
+            }
+            networkAPIService := services.NewNetworkAPIService(network, rpc)
+            networkAPIController := server.NewNetworkAPIController(networkAPIService, assr)
 
-			blockAPIService := services.NewBlockAPIService(network, rpc)
-			blockAPIController := server.NewBlockAPIController(blockAPIService, assr)
+            blockAPIService := services.NewBlockAPIService(network, rpc)
+            blockAPIController := server.NewBlockAPIController(blockAPIService, assr)
 
-			accountAPIService := services.NewAccountAPIService(network, rpc)
-			accountAPIController := server.NewAccountAPIController(accountAPIService, assr)
+            accountAPIService := services.NewAccountAPIService(network, rpc)
+            accountAPIController := server.NewAccountAPIController(accountAPIService, assr)
 
-			rosettaRouter := server.NewRouter(networkAPIController, blockAPIController, accountAPIController)
+            rosettaRouter := server.NewRouter(networkAPIController, blockAPIController, accountAPIController)
 
-			// Path rewrite so wrapped router sees /network/list (no /mesh prefix)
-			router.Any("/mesh/*path", func(c *gin.Context) {
-				r := c.Request.Clone(c.Request.Context())
-				r.URL.Path = strings.TrimPrefix(c.Request.URL.Path, "/mesh")
-				rosettaRouter.ServeHTTP(c.Writer, r)
-			})
-		}
+            // Path rewrite so wrapped router sees /network/list (no /mesh prefix)
+            router.Any("/mesh/*path", func(c *gin.Context) {
+                r := c.Request.Clone(c.Request.Context())
+                r.URL.Path = strings.TrimPrefix(c.Request.URL.Path, "/mesh")
+                rosettaRouter.ServeHTTP(c.Writer, r)
+            })
+        }
 	}
 
 	// Apply API key middleware to all routes except public ones
