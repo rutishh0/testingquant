@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RefreshCw, ClipboardCopy, ShieldCheck, ShieldX, Search } from "lucide-react";
+import { RefreshCw, ClipboardCopy, ShieldCheck, ShieldX, Search, MinusCircle } from "lucide-react";
 
 export default function TestsPage() {
   const [results, setResults] = useState<TestResult[] | null>(null);
@@ -15,6 +15,33 @@ export default function TestsPage() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [query, setQuery] = useState("");
+
+  // Helpers for status/pretty printing
+  const isSkip = useCallback((r: TestResult) => {
+    const t = `${r.message || ""} ${r.error || ""}`;
+    return /(^|\b)skip(?:ped)?(?::|\b)/i.test(t);
+  }, []);
+
+  const statusOf = useCallback((r: TestResult) => {
+    if (isSkip(r) && r.success) return "skip" as const;
+    return r.success ? "pass" : "fail";
+  }, [isSkip]);
+
+  const prettyText = useCallback((text?: string) => {
+    if (!text) return "";
+    const trimmed = text.trim();
+    try {
+      if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+        const obj = JSON.parse(trimmed);
+        return JSON.stringify(obj, null, 2);
+      }
+    } catch {}
+    return trimmed
+      .replace(/\r\n/g, "\n")
+      .replace(/ \-\-\- /g, " \n--- ")
+      .replace(/ === /g, " \n=== ")
+      .replace(/ -> /g, " \n-> ");
+  }, []);
 
   const fetchResults = useCallback(async () => {
     try {
@@ -41,11 +68,11 @@ export default function TestsPage() {
   // Stats for header
   const stats = useMemo(() => {
     const total = allResults.length;
-    const passed = allResults.filter((r) => r.success).length;
-    const failed = total - passed;
+    const passed = allResults.filter((r) => statusOf(r) === "pass").length;
+    const failed = allResults.filter((r) => statusOf(r) === "fail").length;
     const passRate = total ? Math.round((passed / total) * 100) : 0;
     return { total, passed, failed, passRate };
-  }, [allResults]);
+  }, [allResults, statusOf]);
 
   // Filtered lists
   const filteredAll = useMemo(() => {
@@ -56,7 +83,7 @@ export default function TestsPage() {
     );
   }, [allResults, query]);
 
-  const filteredFails = useMemo(() => filteredAll.filter((r) => !r.success), [filteredAll]);
+  const filteredFails = useMemo(() => filteredAll.filter((r) => statusOf(r) === "fail"), [filteredAll, statusOf]);
 
   // Group by tier helper
   const groupByTier = useCallback((list: TestResult[]) => {
@@ -83,18 +110,18 @@ export default function TestsPage() {
       .forEach((tier) => {
         lines.push(`Tier ${tier}`);
         byTier[tier].forEach((r) => {
-          const status = r.success ? "PASS" : "FAIL";
+          const st = statusOf(r) === "pass" ? "PASS" : statusOf(r) === "skip" ? "SKIP" : "FAIL";
           const parts = [
-            `- ${r.name}: ${status}`,
-            r.message ? `  message: ${r.message}` : "",
-            r.error ? `  error: ${r.error}` : "",
+            `- ${r.name}: ${st}`,
+            r.message ? `  message: ${prettyText(r.message)}` : "",
+            r.error ? `  error: ${prettyText(r.error)}` : "",
           ].filter(Boolean);
           lines.push(parts.join("\n"));
         });
         lines.push("");
       });
     return lines.join("\n");
-  }, [allResults]);
+  }, [allResults, prettyText, statusOf]);
 
   const copyAll = async () => {
     try {
@@ -232,33 +259,40 @@ export default function TestsPage() {
                       <CardHeader>
                         <CardTitle>Tier {tier}</CardTitle>
                         <CardDescription>
-                          {groupedAll[tier].filter((r) => r.success).length} passed · {groupedAll[tier].filter((r) => !r.success).length} failed
+                          {groupedAll[tier].filter((r) => statusOf(r) === "pass").length} passed · {groupedAll[tier].filter((r) => statusOf(r) === "fail").length} failed
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
-                          {groupedAll[tier].map((r, idx) => (
-                            <div key={idx} className="border rounded p-3 bg-white dark:bg-slate-900">
-                              <div className="flex items-center justify-between">
-                                <div className="font-medium">{r.name}</div>
-                                {r.success ? (
-                                  <Badge className="bg-green-600/10 text-green-700 dark:bg-green-800/30 dark:text-green-300">
-                                    <ShieldCheck className="w-4 h-4 mr-1" /> Pass
-                                  </Badge>
-                                ) : (
-                                  <Badge className="bg-red-600/10 text-red-700 dark:bg-red-800/30 dark:text-red-300">
-                                    <ShieldX className="w-4 h-4 mr-1" /> Fail
-                                  </Badge>
+                          {groupedAll[tier].map((r, idx) => {
+                            const status = statusOf(r);
+                            return (
+                              <div key={idx} className="border rounded p-3 bg-white dark:bg-slate-900">
+                                <div className="flex items-center justify-between">
+                                  <div className="font-medium">{r.name}</div>
+                                  {status === "pass" ? (
+                                    <Badge className="bg-green-600/10 text-green-700 dark:bg-green-800/30 dark:text-green-300">
+                                      <ShieldCheck className="w-4 h-4 mr-1" /> Pass
+                                    </Badge>
+                                  ) : status === "skip" ? (
+                                    <Badge className="bg-amber-500/10 text-amber-700 dark:bg-amber-800/30 dark:text-amber-300">
+                                      <MinusCircle className="w-4 h-4 mr-1" /> Skip
+                                    </Badge>
+                                  ) : (
+                                    <Badge className="bg-red-600/10 text-red-700 dark:bg-red-800/30 dark:text-red-300">
+                                      <ShieldX className="w-4 h-4 mr-1" /> Fail
+                                    </Badge>
+                                  )}
+                                </div>
+                                {r.message && (
+                                  <pre className="text-xs mt-3 text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-mono leading-relaxed bg-slate-50 dark:bg-slate-950/40 border rounded p-3 overflow-x-auto">{prettyText(r.message)}</pre>
+                                )}
+                                {r.error && (
+                                  <pre className="text-xs mt-3 text-red-700 dark:text-red-300 whitespace-pre-wrap font-mono leading-relaxed bg-slate-50 dark:bg-slate-950/40 border rounded p-3 overflow-x-auto">{prettyText(r.error)}</pre>
                                 )}
                               </div>
-                              {r.message && (
-                                <div className="text-xs mt-2 text-muted-foreground">{r.message}</div>
-                              )}
-                              {r.error && (
-                                <div className="text-xs mt-2 text-red-600 whitespace-pre-wrap">{r.error}</div>
-                              )}
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </CardContent>
                     </Card>
@@ -295,10 +329,10 @@ export default function TestsPage() {
                                 </Badge>
                               </div>
                               {r.message && (
-                                <div className="text-xs mt-2 text-muted-foreground">{r.message}</div>
+                                <pre className="text-xs mt-3 text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-mono leading-relaxed bg-slate-50 dark:bg-slate-950/40 border rounded p-3 overflow-x-auto">{prettyText(r.message)}</pre>
                               )}
                               {r.error && (
-                                <div className="text-xs mt-2 text-red-600 whitespace-pre-wrap">{r.error}</div>
+                                <pre className="text-xs mt-3 text-red-700 dark:text-red-300 whitespace-pre-wrap font-mono leading-relaxed bg-slate-50 dark:bg-slate-950/40 border rounded p-3 overflow-x-auto">{prettyText(r.error)}</pre>
                               )}
                             </div>
                           ))}
@@ -323,11 +357,7 @@ export default function TestsPage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                <textarea
-                  className="w-full h-56 text-xs p-3 border rounded bg-white dark:bg-slate-900"
-                  readOnly
-                  value={plainText}
-                />
+                <pre className="w-full h-56 text-xs p-3 border rounded bg-white dark:bg-slate-900 overflow-auto whitespace-pre-wrap">{plainText}</pre>
               </CardContent>
             </Card>
           </TabsContent>
