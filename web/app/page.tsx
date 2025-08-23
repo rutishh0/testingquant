@@ -13,12 +13,12 @@ import {
   Network, 
   TrendingUp, 
   Activity,
-  ExternalLink,
   Shield,
   ShieldCheck,
   Zap,
   LayoutDashboard,
-  Menu
+  Menu,
+  Send
 } from "lucide-react";
 import CoinbaseWallets from "@/components/coinbase-wallets";
 import CoinbaseAssets from "@/components/coinbase-assets";
@@ -53,6 +53,11 @@ export default function Home() {
             <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
               <Menu className="h-6 w-6" />
             </Button>
+            <Link href="/transfer">
+              <Button variant="secondary" className="hidden sm:flex" aria-label="Go to Transfer">
+                <Send className="w-4 h-4 mr-2" /> Transfer
+              </Button>
+            </Link>
             <Badge variant="outline" className="hidden sm:flex px-3 py-1">
               <Shield className="w-4 h-4 mr-2" />
               Production Ready
@@ -91,6 +96,10 @@ export default function Home() {
                 <ShieldCheck className="w-4 h-4" />
                 <span>Testing</span>
               </a>
+              <Link href="/transfer" className="flex items-center space-x-2 py-2 px-4 rounded hover:bg-accent">
+                <Send className="w-4 h-4" />
+                <span>Transfer</span>
+              </Link>
               <a href="#analytics" className="flex items-center space-x-2 py-2 px-4 rounded hover:bg-accent">
                 <Activity className="w-4 h-4" />
                 <span>Analytics</span>
@@ -119,6 +128,10 @@ export default function Home() {
             <ShieldCheck className="w-4 h-4" />
             <span>Testing</span>
           </a>
+          <Link href="/transfer" className="flex items-center space-x-2 py-2 px-4 rounded hover:bg-accent">
+            <Send className="w-4 h-4" />
+            <span>Transfer</span>
+          </Link>
           <a href="#analytics" className="flex items-center space-x-2 py-2 px-4 rounded hover:bg-accent">
             <Activity className="w-4 h-4" />
             <span>Analytics</span>
@@ -219,136 +232,105 @@ export default function Home() {
                   <Activity className="w-5 h-5 text-orange-600" />
                   <span>Cross-Chain Transactions</span>
                 </CardTitle>
-              <CardDescription>
-                  Execute and monitor cross-chain transactions across networks
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+                <CardDescription>
+                  Initiate and monitor cross-chain transfers through Overledger
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <OverledgerTransactions />
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
+        <section id="trading" className="scroll-mt-24">
+          <h2 className="text-2xl font-bold mb-6 flex items-center space-x-2">
+            <TrendingUp className="w-6 h-6 text-emerald-600" />
+            <span>Trading & Analytics</span>
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="border-indigo-200 bg-indigo-50/50 dark:border-indigo-800 dark:bg-indigo-950/50">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Activity className="w-5 h-5 text-indigo-600" />
+                  <span>Market Analytics</span>
+                </CardTitle>
+                <CardDescription>
+                  Real-time analytics and insights for major crypto assets
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">
+                  Coming soon: sentiment analysis, volatility metrics, and more
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-yellow-200 bg-yellow-50/50 dark:border-yellow-800 dark:bg-yellow-950/50">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <ShieldCheck className="w-5 h-5 text-yellow-600" />
+                  <span>Risk Controls</span>
+                </CardTitle>
+                <CardDescription>
+                  Configure position limits, slippage tolerance, and other risk parameters
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">Advanced risk management controls will be available here</div>
+              </CardContent>
+            </Card>
           </div>
         </section>
 
         <section id="testing" className="scroll-mt-24">
           <h2 className="text-2xl font-bold mb-6 flex items-center space-x-2">
-            <ShieldCheck className="w-6 h-6" />
-            <span>Testing Logs</span>
+            <ShieldCheck className="w-6 h-6 text-red-600" />
+            <span>Testing & Diagnostics</span>
           </h2>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <ShieldCheck className="w-5 h-5" />
-                <span>Testing Logs</span>
-              </CardTitle>
-              <CardDescription>
-                Automated backend test results (refreshes every 30s)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TestingLogs />
-            </CardContent>
-          </Card>
-
-          {/* Code Coverage quick access */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Shield className="w-5 h-5" />
-                <span>Code Coverage</span>
-              </CardTitle>
-              <CardDescription>
-                internal/clients coverage summary and interactive report
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-3xl font-bold">57.4%</div>
-                  <p className="text-sm text-muted-foreground">Overall coverage</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/50">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <ShieldCheck className="w-5 h-5 text-red-600" />
+                  <span>System Status</span>
+                </CardTitle>
+                <CardDescription>
+                  View system health and testing logs
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <SystemHealth />
+                <div className="mt-4">
+                  <TestingLogs />
                 </div>
-                <Link href="/coverage" className="inline-flex items-center px-3 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-90">
-                  Open Report
-                  <ExternalLink className="w-4 h-4 ml-2" />
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        <section id="trading" className="scroll-mt-24">
-          <h2 className="text-2xl font-bold mb-6 flex items-center space-x-2">
-            <TrendingUp className="w-6 h-6" />
-            <span>Trading Dashboard</span>
-          </h2>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <TrendingUp className="w-5 h-5" />
-                <span>Trading Dashboard</span>
-              </CardTitle>
-              <CardDescription>
-                Advanced trading features and portfolio management
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-muted-foreground">
-                <TrendingUp className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <h3 className="text-lg font-semibold">Trading Features Coming Soon</h3>
-                <p>Advanced trading and portfolio management tools will be available in the next release.</p>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </section>
 
         <section id="analytics" className="scroll-mt-24">
           <h2 className="text-2xl font-bold mb-6 flex items-center space-x-2">
-            <Activity className="w-6 h-6" />
-            <span>Analytics Dashboard</span>
+            <Activity className="w-6 h-6 text-sky-600" />
+            <span>Analytics</span>
           </h2>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Activity className="w-5 h-5" />
-                <span>Analytics Dashboard</span>
-              </CardTitle>
-              <CardDescription>
-                Transaction analytics, performance metrics, and insights
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-muted-foreground">
-                <Activity className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <h3 className="text-lg font-semibold">Analytics Coming Soon</h3>
-                <p>Comprehensive analytics and reporting features will be available in the next release.</p>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="border-sky-200 bg-sky-50/50 dark:border-sky-800 dark:bg-sky-950/50">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Activity className="w-5 h-5 text-sky-600" />
+                  <span>Observability</span>
+                </CardTitle>
+                <CardDescription>
+                  Metrics and traces for system components
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">Grafana, Prometheus, and OpenTelemetry dashboards</div>
+              </CardContent>
+            </Card>
+          </div>
         </section>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-16 pt-8 border-t text-center text-sm text-muted-foreground">
-          <p>
-            Powered by{" "}
-            <a
-              href="https://coinbase.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-700 inline-flex items-center"
-            >
-              Coinbase <ExternalLink className="w-3 h-3 ml-1" />
-            </a>{" "}
-            and{" "}
-            <a
-              href="https://quant.network"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-purple-600 hover:text-purple-700 inline-flex items-center"
-            >
-              Quant Overledger <ExternalLink className="w-3 h-3 ml-1" />
-            </a>
-          </p>
         </div>
       </div>
     </main>

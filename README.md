@@ -1,429 +1,132 @@
-# Quant Connector
+# TestingQuant Connector (Go backend + Next.js web)
 
-_Unified Coinbase Mesh × Quant Overledger bridge – Go backend · Next.js dashboard · Docker-ready for Koyeb_
-
----
-
-Quant Connector exposes a single REST API plus a React dashboard that lets you:
-
-* Create & manage Coinbase wallets/addresses
-* Retrieve balances, assets and exchange-rates
-* Relay signed transactions to multiple chains via Overledger
-* View live system-health – all secured by an `X-API-Key` header
+A full-stack project that provides a Go (Gin) backend exposing Coinbase, Overledger, and Rosetta-compatible Mesh endpoints, plus a Next.js web UI in `web/`. For local development on Windows, a PowerShell helper script `start.ps1` launches both the backend and the frontend for you.
 
 ---
 
-## Tech Stack
+## Quick start (Windows, PowerShell)
 
-| Layer      | Technology                                                   |
-|------------|--------------------------------------------------------------|
-| Backend    | **Go 1.21**, Gin, CORS, OAuth2 (Overledger), Mesh client |
-| Frontend   | **Next.js 14** (app router), Tailwind CSS, Radix UI           |
-| Container  | Multi-stage Docker (Node → Go → Alpine)                      |
-| Hosting    | Koyeb (Docker image, zero-dyno scaling)                      |
+1) Prerequisites
+- Git
+- Go 1.21+
+- Node.js 18.18+ or 20+ and npm
+- PowerShell 5+ (or PowerShell 7)
 
----
-
-## Quick Start (local)
-
-```bash
-# clone & install deps
-git clone https://github.com/<your-org>/quant-connector.git
-cd quant-connector
-go mod download
-npm --prefix web ci
-
-# copy env template and fill in credentials
-cp .env.example .env
-
-# run backend (http://localhost:8080)
-go run cmd/main.go &
-
-# run frontend (http://localhost:3000)
-npm --prefix web run dev
+2) Clone and install frontend deps
+```powershell
+git clone https://github.com/rutishh0/testingquant.git
+cd testingquant
+# Install frontend dependencies once
+cd web
+npm install
+cd ..
 ```
 
-Visit `http://localhost:3000` – the dashboard proxies API calls to `localhost:8080`.
+3) Run using the helper script
+```powershell
+# From the repo root
+# If your script execution policy blocks running scripts, use the second command instead
+.\start.ps1
+# or
+powershell -ExecutionPolicy Bypass -File .\start.ps1
+```
+What happens:
+- A new PowerShell window runs the backend: `go run ./cmd/main.go` on http://localhost:8080
+- A second PowerShell window runs the frontend: `npm run dev -- -p 3001` with `NEXT_PUBLIC_BACKEND_URL=http://localhost:8080`
+
+4) Open the app
+- Frontend: http://localhost:3001
+- Backend health: http://localhost:8080/health
+
+> Tip: On first run, the frontend will fail if `node_modules` are missing. Make sure you executed `npm install` in the `web/` directory before running the script.
 
 ---
 
-## Environment Variables
+## Manual run (macOS/Linux/WSL or without the script)
 
-### Mesh
-
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `MESH_API_URL` | Coinbase Mesh API base URL (proxy or server) | `http://localhost:8080/mesh` |
-
-### Required for Overledger
-
-| Variable | Purpose | Example |
-|----------|---------|---------|
-| `OVERLEDGER_CLIENT_ID` | OAuth2 client ID | `3nhqpst935v0kqumc3s76jcq46` |
-| `OVERLEDGER_CLIENT_SECRET` | OAuth2 client secret | `102l0eabrqum...` |
-
-### Optional Configuration
-
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `API_KEY` | API key for your clients | _(optional)_ |
-| `SERVER_ADDRESS` | Server bind address | `:8080` (uses PORT env if set) |
-| `ENVIRONMENT` | Runtime environment | `development` |
-| `LOG_LEVEL` | Logging verbosity | `info` |
-| `COINBASE_API_URL` | Coinbase REST base URL | `https://api.coinbase.com` |
-| `OVERLEDGER_AUTH_URL` | OAuth2 token endpoint | `https://auth.overledger.dev/oauth2/token` |
-| `OVERLEDGER_BASE_URL` | Overledger API base | `https://api.overledger.dev` |
-
-**⚠️ Security Note:** Never commit credentials to your repository. Use environment variables or secret management systems.
-
----
-
-## API Surface (v1)
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET    | `/health` | Service & dependency health |
-| GET    | `/v1/coinbase/wallets` | List wallets |
-| POST   | `/v1/coinbase/wallets` | Create wallet |
-| GET    | `/v1/coinbase/assets`  | List tradeable assets |
-| …      | *(many more – see `internal/api/router.go`)* | |
-
-All non-public routes require the `X-API-Key` header.
-
----
-
-## Deployment on Koyeb
-
-1. Push code → GitHub (Koyeb is set to auto-build the Dockerfile).
-2. In the Koyeb service → **Settings → Environment** set the same variables shown above.
-3. Wait for the build to finish and status to be **Running**.
-4. Open `/health` in the browser – it should return HTTP 200 with `{"status":"healthy"}`.
-
----
-
-## Project Layout & File Guide
-
-| Path | What it does |
-|------|--------------|
-| **`cmd/main.go`** | Program entry; loads env, DI, starts Gin server |
-| **`internal/api/router.go`** | Registers all REST routes & middleware |
-| **`internal/api/handlers.go`** | Implementation of HTTP handlers (Coinbase, Mesh, Overledger) |
-| **`internal/config/config.go`** | Loads env vars into a typed `Config` struct |
-| **`internal/clients/coinbase.go`** | Minimal Coinbase REST client |
-| **`internal/overledger/`** | Thin Overledger client + models |
-| **`internal/connector/service.go`** | Business layer bridging clients with handlers |
-| **`internal/clients/mesh.go`** | Mesh client wrapper |
-| **`web/`** | Next.js 14 dashboard (App Router) |
-| &nbsp;&nbsp;`web/app/` | Top-level `layout.tsx`, global CSS, root page |
-| &nbsp;&nbsp;`web/components/` | Reusable React components + `api-client.ts` (fetch wrapper) |
-| **`Dockerfile`** | Multi-stage build → static frontend then Go binary on Alpine |
-| **`docker-compose.yml`** | Local one-shot dev stack (backend + Postgres demo) |
-| **`.env.example`** | Copy to `.env` – documents every variable |
-| **`test_api.ps1`** | Sample PowerShell script calling endpoints |
-
-For a deeper dive, see inline docstrings in each file.
-
----
-
-## Development scripts
-
+Terminal A – backend:
 ```bash
-# run all Go tests
-go test ./...
-# lint (go vet + staticcheck suggested)
-make lint
+# from repo root
+# optionally set a different port; default is :8080
+# PORT=8080 or SERVER_ADDRESS=:8080 are supported
+# API_KEY is optional for dev; leave empty to disable auth
+PORT=8080 go run ./cmd/main.go
 ```
 
+Terminal B – frontend:
+```bash
+cd web
+export NEXT_PUBLIC_BACKEND_URL="http://localhost:8080"
+npm install
+npm run dev -- -p 3001
+```
+
+Open http://localhost:3001
+
 ---
 
-## Contributing
+## Environment variables
 
-1. Fork → feature branch
-2. Commit with conventional commits
-3. Make sure `go test ./...` & `npm test` pass
-4. Open PR – we squash-merge
+You can run the backend with no credentials for a simple local demo. Features that need external services (Coinbase, Overledger, external Ethereum RPC) will automatically disable when their vars are missing.
 
----
+Backend (read in `internal/config/config.go`):
+- SERVER_ADDRESS: Listening address, default `:8080`. Alternative: set PORT.
+- API_KEY: Optional. If set, all non-public API endpoints require the header `X-API-Key: <API_KEY>`.
+- ENVIRONMENT: `development` (default) or `production`.
+- LOG_LEVEL: `info` (default).
+- COINBASE_API_KEY_ID, COINBASE_API_SECRET, COINBASE_API_URL: Optional. Enable Coinbase features.
+- OVERLEDGER_CLIENT_ID, OVERLEDGER_CLIENT_SECRET, OVERLEDGER_AUTH_URL, OVERLEDGER_BASE_URL, OVERLEDGER_TX_SIGNING_KEY_ID: Optional. Enable Overledger features.
+- MESH_API_URL: Optional. Default `http://localhost:8080/mesh`. Leave empty to use the embedded Mesh Rosetta API served by this backend under `/mesh`. If you point to an external service, ensure the URL includes the `/mesh` path.
+- MESH_USE_SDK: Optional, `true` to use the Mesh SDK client instead of HTTP.
+- ETH_RPC_URL or INFURA_RPC_URL: Optional. Used by the embedded Mesh services. If omitted, a Sepolia RPC fallback is used.
 
-## License
+Frontend (`web/components/api-client.ts`):
+- NEXT_PUBLIC_BACKEND_URL: Base URL for the backend; set by `start.ps1` to `http://localhost:8080`.
+- NEXT_PUBLIC_API_KEY: Optional. If you set `API_KEY` on the backend, set this to the same value so the UI sends `X-API-Key` with requests.
 
-MIT © 2025 Quant Network
-
-A middleware service that translates Quant Overledger API calls to Coinbase Mesh API requests, providing a unified interface for blockchain interactions.
-
-## Overview
-
-This connector serves as a translation layer between Quant Overledger and Coinbase Mesh APIs, enabling developers to:
-
-- Execute cross-chain transactions through a unified interface
-- Query blockchain data across multiple networks
-- Interact with smart contracts using standardized endpoints
-- Access comprehensive blockchain functionality without managing multiple API integrations
-
-## Architecture
-
-The connector consists of:
-
-- **API Gateway**: HTTP server with authentication and routing
-- **Translation Engine**: Converts between Overledger and Mesh data models
-- **Mesh Client**: Handles communication with Coinbase Mesh API
-- **Configuration Management**: Environment-based configuration
-
-## Prerequisites
-
-- Go 1.21 or higher
-- Access to a Coinbase Mesh-compatible node
-- Valid API credentials
-
-## Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/rutishh0/quant-mesh-connector.git
-cd quant-mesh-connector
-```
-
-2. Install dependencies:
-```bash
-go mod download
-```
-
-3. Copy environment configuration:
-```bash
-cp .env.example .env
-```
-
-4. Update `.env` with your configuration:
+Sample `.env` for backend (optional):
 ```env
-SERVER_ADDRESS=:8080
-MESH_API_URL=http://localhost:8081  # Optional: URL of a Coinbase Mesh implementation
-API_KEY=your-api-key-here
+# Server
+PORT=8080
+API_KEY=
 ENVIRONMENT=development
 LOG_LEVEL=info
+
+# Coinbase (optional)
+COINBASE_API_KEY_ID=
+COINBASE_API_SECRET=
+COINBASE_API_URL=https://api.coinbase.com
+
+# Overledger (optional)
+OVERLEDGER_CLIENT_ID=
+OVERLEDGER_CLIENT_SECRET=
+OVERLEDGER_AUTH_URL=https://auth.overledger.dev/oauth2/token
+OVERLEDGER_BASE_URL=https://api.overledger.dev
+OVERLEDGER_TX_SIGNING_KEY_ID=
+
+# Mesh (optional)
+MESH_API_URL=
+MESH_USE_SDK=false
+
+# Ethereum RPC for Mesh (optional)
+ETH_RPC_URL=
+# or
+INFURA_RPC_URL=
 ```
 
-## Usage
+---
 
-### Starting the Server
+## Useful endpoints
 
-```bash
-go run cmd/main.go
-```
+Public (no API key):
+- `GET /health`
+- `GET /status`
+- `GET /tests`
+- Rosetta Mesh (embedded): `GET /mesh/*` (e.g. `/mesh/network/list`)
 
-The server will start on the configured port (default: 8080).
+Versioned API (often requires API key if `API_KEY` is set):
+- Coinbase: `/v1/coinbase/*`
+- Overledger: `/v1/overledger/*`
+- Mesh helper: `/v1/mesh/*`
 
-### API Endpoints
-
-#### Health Check
-```bash
-GET /health
-```
-
-#### Construction API
-
-**Preprocess Transaction**
-```bash
-POST /v1/construction/preprocess
-Content-Type: application/json
-X-API-Key: your-api-key
-
-{
-  "network_identifier": {
-    "blockchain": "ethereum",
-    "network": "mainnet"
-  },
-  "operations": [
-    {
-      "operation_identifier": {
-        "index": 0
-      },
-      "type": "TRANSFER",
-      "account": {
-        "address": "0x..."
-      },
-      "amount": {
-        "value": "1000000000000000000",
-        "currency": {
-          "symbol": "ETH",
-          "decimals": 18
-        }
-      }
-    }
-  ]
-}
-```
-
-**Create Payloads**
-```bash
-POST /v1/construction/payloads
-Content-Type: application/json
-X-API-Key: your-api-key
-
-{
-  "network_identifier": {
-    "blockchain": "ethereum",
-    "network": "mainnet"
-  },
-  "operations": [...],
-  "metadata": {...}
-}
-```
-
-**Combine Signatures**
-```bash
-POST /v1/construction/combine
-Content-Type: application/json
-X-API-Key: your-api-key
-
-{
-  "network_identifier": {
-    "blockchain": "ethereum",
-    "network": "mainnet"
-  },
-  "unsigned_transaction": "0x...",
-  "signatures": [...]
-}
-```
-
-**Submit Transaction**
-```bash
-POST /v1/construction/submit
-Content-Type: application/json
-X-API-Key: your-api-key
-
-{
-  "network_identifier": {
-    "blockchain": "ethereum",
-    "network": "mainnet"
-  },
-  "signed_transaction": "0x..."
-}
-```
-
-#### Account API
-
-**Get Balance**
-```bash
-POST /v1/account/balance
-Content-Type: application/json
-X-API-Key: your-api-key
-
-{
-  "network_identifier": {
-    "blockchain": "ethereum",
-    "network": "mainnet"
-  },
-  "account_identifier": {
-    "address": "0x..."
-  }
-}
-```
-
-#### Block API
-
-**Get Block**
-```bash
-POST /v1/block/
-Content-Type: application/json
-X-API-Key: your-api-key
-
-{
-  "network_identifier": {
-    "blockchain": "ethereum",
-    "network": "mainnet"
-  },
-  "block_identifier": {
-    "index": 12345678
-  }
-}
-```
-
-## Development
-
-### Project Structure
-
-```
-.
-├── cmd/
-│   └── main.go              # Application entry point
-├── internal/
-│   ├── api/
-│   │   ├── handlers.go      # HTTP handlers
-│   │   └── router.go        # Route configuration
-│   ├── config/
-│   │   └── config.go        # Configuration management
-│   ├── connector/
-│   │   ├── models.go        # Overledger data models
-│   │   └── service.go       # Translation service
-│   ├── mesh/
-│   │   ├── client.go        # Mesh API client
-│   │   └── models.go        # Mesh data models
-│   └── overledger/
-│       ├── client.go        # Overledger API client
-│       └── models.go        # Overledger data models
-├── .env.example             # Environment configuration template
-├── go.mod                   # Go module definition
-└── README.md               # This file
-```
-
-### Running Tests
-
-```bash
-go test ./...
-```
-
-### Building
-
-```bash
-go build -o bin/connector cmd/main.go
-```
-
-## Configuration
-
-| Environment Variable | Description | Default |
-|----------------------|-------------|----------|
-| `SERVER_ADDRESS` | Server bind address | `:8080` |
-| `MESH_API_URL` | Coinbase Mesh API URL (optional) | Empty string (disabled) |
-| `API_KEY` | API authentication key | - |
-| `ENVIRONMENT` | Runtime environment | `development` |
-| `LOG_LEVEL` | Logging level | `info` |
-| `OVERLEDGER_CLIENT_ID` | Quant Overledger OAuth2 client ID | - |
-| `OVERLEDGER_CLIENT_SECRET` | Quant Overledger OAuth2 client secret | - |
-| `OVERLEDGER_AUTH_URL` | Quant Overledger OAuth2 token URL | `https://auth.overledger.dev/oauth2/token` |
-| `OVERLEDGER_BASE_URL` | Quant Overledger API base URL | `https://api.overledger.dev` |
-
-## Error Handling
-
-The API returns standardized error responses:
-
-```json
-{
-  "error": "error_code",
-  "message": "Human readable error message",
-  "code": 400
-}
-```
-
-Common error codes:
-- `400`: Bad Request - Invalid input parameters
-- `401`: Unauthorized - Missing or invalid API key
-- `500`: Internal Server Error - Processing failure
-
-## Security
-
-- All API endpoints (except health checks) require authentication via `X-API-Key` header
-- CORS is configured for cross-origin requests
-- Input validation is performed on all requests
-- Sensitive configuration is managed through environment variables
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
+---

@@ -27,6 +27,7 @@ type Config struct {
 	OverledgerClientSecret string
 	OverledgerAuthURL      string
 	OverledgerBaseURL      string
+	OverledgerTxSigningKeyID string
 }
 
 // LoadConfig loads configuration from environment variables
@@ -70,6 +71,7 @@ func LoadConfig() *Config {
 		OverledgerClientSecret: getEnv("OVERLEDGER_CLIENT_SECRET", ""),
 		OverledgerAuthURL:      getEnv("OVERLEDGER_AUTH_URL", "https://auth.overledger.dev/oauth2/token"),
 		OverledgerBaseURL:      getEnv("OVERLEDGER_BASE_URL", "https://api.overledger.dev"),
+		OverledgerTxSigningKeyID: getEnv("OVERLEDGER_TX_SIGNING_KEY_ID", ""),
 	}
 }
 

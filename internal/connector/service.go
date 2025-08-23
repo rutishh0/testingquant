@@ -200,10 +200,12 @@ func (s *service) EstimateCoinbaseTransactionFee(walletID string, req *EstimateF
 // Overledger operations
 
 func (s *service) GetOverledgerNetworks() (*overledger.NetworksResponse, error) {
-	if s.overledgerClient == nil {
-		return nil, errors.New("overledger client not initialized")
+	// Return a static list of supported networks to avoid making a request to Overledger
+	networks := []overledger.Network{
+		{ID: "ethereum-sepolia", Name: "Ethereum Sepolia", Description: "Ethereum Sepolia testnet", Type: "ethereum", Status: "available"},
+		{ID: "ethereum-mainnet", Name: "Ethereum Mainnet", Description: "Ethereum mainnet", Type: "ethereum", Status: "available"},
 	}
-	return s.overledgerClient.GetNetworks()
+	return &overledger.NetworksResponse{Networks: networks}, nil
 }
 
 // Mesh operations
@@ -301,15 +303,15 @@ func (s *service) HealthCheck() (*HealthResponse, error) {
 		health.Services["mesh"] = ServiceHealth{Status: "uninitialized"}
 	}
 
-	// Check Overledger health
+	// Check Overledger health (basic)
 	if s.overledgerClient != nil {
-		overledgerHealthy := "healthy"
-		overledgerMsg := ""
-		if _, err := s.overledgerClient.GetNetworks(); err != nil {
-			overledgerHealthy = "unhealthy"
-			overledgerMsg = err.Error()
+		olHealthy := "healthy"
+		olMsg := ""
+		if err := s.overledgerClient.TestConnection(); err != nil {
+			olHealthy = "unhealthy"
+			olMsg = err.Error()
 		}
-		health.Services["overledger"] = ServiceHealth{Status: overledgerHealthy, Message: overledgerMsg}
+		health.Services["overledger"] = ServiceHealth{Status: olHealthy, Message: olMsg}
 	} else {
 		health.Services["overledger"] = ServiceHealth{Status: "uninitialized"}
 	}
